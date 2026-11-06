@@ -1,0 +1,20 @@
+{
+  "name": "ai-village",
+  "version": "0.1.0",
+  "description": "AI Village — uma empresa de agentes numa vila japonesa futurista. Backend + BD próprios, sem dependências externas.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "VILLAGE_PASSCODE=village-dev node --disable-warning=ExperimentalWarning server/index.js",
+    "worker": "node --disable-warning=ExperimentalWarning server/worker-main.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 --test-reporter=spec \"test/*.test.js\"",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js",
+    "restore": "node --disable-warning=ExperimentalWarning scripts/restore.js",
+    "e2e": "node scripts/e2e-browser.cjs",
+    "measure": "node --disable-warning=ExperimentalWarning scripts/measure-latency.js"
+  }
+}
