@@ -69,7 +69,7 @@ async function mount() {
   view?.destroy?.(); view = null; clear(main);
   try {
     if (route.page === 'vila') view = homeView(main);
-    else if (route.page === 'trabalho') view = workView(main, route.sub || 'tarefas');
+    else if (route.page === 'trabalho') view = workView(main, route.sub || 'hoje');
     else if (route.page === 'ligacoes') view = await connectionsView(main);
     else view = settingsView(main, route.sub || 'org');
   } catch (e) { main.append(h('div', { class: 'note bad' }, `Erro ao abrir a vista: ${e.message}`)); console.error(e); }

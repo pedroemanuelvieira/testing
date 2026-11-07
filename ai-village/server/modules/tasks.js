@@ -33,11 +33,12 @@ const out = (t) => t && ({
 
 export function getTask(w, id) { return out(mustGet(w, 'tasks', id, 'Tarefa')); }
 
-export function listTasks(w, { state, agent_id, kind, limit = 200 } = {}) {
+export function listTasks(w, { state, agent_id, kind, project_id, limit = 200 } = {}) {
   const where = ['world_id = ?', 'account_id = ?']; const args = [w.id, w.accountId];
   if (state) { where.push('state = ?'); args.push(state); }
   if (agent_id) { where.push('assigned_agent_id = ?'); args.push(agent_id); }
   if (kind) { where.push('kind = ?'); args.push(kind); }
+  if (project_id) { where.push('project_id = ?'); args.push(project_id); }
   return w.db.prepare(`SELECT * FROM tasks WHERE ${where.join(' AND ')} ORDER BY updated_at DESC LIMIT ${Math.min(Number(limit) || 200, 500)}`)
     .all(...args).map(out);
 }
@@ -100,6 +101,7 @@ export function createTask(w, actor, body) {
   }
 
   const assignee = body.assigned_agent_id ? resolveAssignee(w, body.assigned_agent_id, capability) : null;
+  const projectId = body.project_id ? mustGet(w, 'projects', body.project_id, 'Projeto').id : null;
 
   // Delegação por um agente: avaliada pela política, nunca pelo cargo.
   let permissionRef = null;
@@ -117,7 +119,7 @@ export function createTask(w, actor, body) {
     throw new HttpError(429, 'concurrency_limit', 'O agente atingiu o limite de tarefas em simultâneo.');
   }
 
-  const payload = { title, objective: body.objective || '', capability, assigned: assignee?.id || null, input_refs: inputRefs, config, parent: parent?.id || null, delegated_by: body.delegated_by || null };
+  const payload = { title, objective: body.objective || '', capability, assigned: assignee?.id || null, input_refs: inputRefs, config, parent: parent?.id || null, delegated_by: body.delegated_by || null, project: projectId };
   const payloadDigest = digestOf(payload);
   const idem = body.idempotency_key ? str(body.idempotency_key, 'idempotency_key', { max: 80 }) : null;
   if (idem) {
@@ -137,6 +139,7 @@ export function createTask(w, actor, body) {
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, w.id, w.accountId, title, str(body.objective, 'objective', { max: 1500 }) || '',
       kind, capability, json(inputRefs), json(config), str(body.expected_output, 'expected_output', { max: 500 }) || '', json([]), actor.id,
       assignee?.id || null, body.delegated_by || null, parent?.id || null, permissionRef, priority, state, idem, payloadDigest, depth, body.due_at || null, now, now);
+    if (projectId) w.db.prepare('UPDATE tasks SET project_id=? WHERE id=?').run(projectId, id);
     audit(w, { actor: body.delegated_by ? `agent:${body.delegated_by}` : actor.ref, action: body.delegated_by ? 'task.delegate' : 'task.create',
       resource: id, digest: payloadDigest, reason: permissionRef ? `perm:${permissionRef}` : undefined });
   });

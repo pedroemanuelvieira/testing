@@ -2,7 +2,7 @@
 // Só metadados operacionais: nunca conteúdo de mensagens, notas ou artefactos.
 import { clock, notFound } from '../lib/util.js';
 
-export const EXPORTABLE = ['dim_unit', 'dim_role', 'dim_agent', 'fact_task', 'fact_attempt', 'fact_approval', 'fact_audit', 'fact_message'];
+export const EXPORTABLE = ['dim_unit', 'dim_role', 'dim_agent', 'fact_task', 'fact_attempt', 'fact_approval', 'fact_audit', 'fact_message', 'fact_routine_run', 'dim_routine', 'dim_project'];
 
 const pct = (arr, p) => {
   if (!arr.length) return null;

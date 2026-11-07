@@ -69,7 +69,13 @@ const cleanup = () => { server.kill('SIGTERM'); setTimeout(() => rmSync(dir, { r
   await page.click('text=Aprovar esta ação exata'); await page.click('text=Executar simulação');
   await page.waitForSelector('text=nada saiu da app'); step('aprovação simulada executada uma vez');
 
-  // 6) mobile 390px sem scroll horizontal
+  // 6) Hoje (rotinas) no mundo profissional: registar uma execução
+  await page.goto(`${BASE}/#/vila`); await page.click('button:has-text("Profissional")'); await page.waitForTimeout(500);
+  await page.goto(`${BASE}/#/trabalho/hoje`); await page.waitForSelector('text=Rotinas da equipa');
+  await page.click('tr:has-text("Saúde do ETL") button:has-text("Registar")'); await page.click('.modal button:has-text("Registar")');
+  await page.waitForSelector('text=Execução registada.'); step('Hoje: execução de rotina registada');
+
+  // 7) mobile 390px sem scroll horizontal
   const mp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await mp.goto(BASE); await mp.fill('input[type=password]', 'e2e-pass'); await mp.click('button[type=submit]'); await mp.waitForSelector('.kpis');
   const [sw, iw] = await mp.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);

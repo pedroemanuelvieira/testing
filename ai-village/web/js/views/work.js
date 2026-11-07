@@ -5,6 +5,7 @@ import { S, W, agentById, agents, loadWorld, designOnly, pref } from '../state.j
 import { avatarEl, shortHash } from '../components.js';
 import { openTaskForm, openTaskDetail, openEvidence } from './tasks.js';
 import { biPanel } from './bi.js';
+import { todayPane, projectsPane } from './today.js';
 
 const errMsg = (e) => (e instanceof ApiError ? e.message : 'Falhou. Tenta de novo.');
 const LANES = [
@@ -12,22 +13,28 @@ const LANES = [
   ['Precisam de atenção', ['blocked', 'failed']], ['Terminadas', ['completed', 'cancelled']],
 ];
 
-export function workView(root, sub = 'tarefas') {
+export function workView(root, sub = 'hoje') {
   const tabs = h('div', { class: 'tabs', role: 'tablist' });
   const pane = h('div', {});
   const head = h('div', { class: 'view-head' }, h('div', {}, h('div', { class: 'kanji' }, '仕事 · TRABALHO'), h('h1', {}, 'Tarefas, provas e aprovações')), h('span', { class: 'grow' }),
     h('button', { class: 'btn primary', onclick: () => openTaskForm({ onDone: () => tick(true) }) }, '＋ Nova tarefa'));
   root.append(head, tabs, pane);
-  let current = ['tarefas', 'aprovacoes', 'provas', 'painel'].includes(sub) ? sub : 'tarefas';
+  let current = ['hoje', 'tarefas', 'projetos', 'aprovacoes', 'provas', 'painel'].includes(sub) ? sub : 'hoje';
+  let slowTicks = 0;
   let sig = '';
-  const NAMES = { tarefas: 'Tarefas', aprovacoes: 'Aprovações', provas: 'Provas', painel: 'Painel BI' };
+  const NAMES = { hoje: 'Hoje', tarefas: 'Tarefas', projetos: 'Projetos', aprovacoes: 'Aprovações', provas: 'Provas', painel: 'Painel BI' };
   const paintTabs = () => tabs.replaceChildren(...Object.entries(NAMES).map(([id, l]) => h('button', { role: 'tab', 'aria-selected': String(current === id), onclick: () => { current = id; sig = ''; location.hash = `#/trabalho/${id}`; paintTabs(); tick(true); } },
     l, id === 'aprovacoes' && S.overview?.pending_approvals ? h('span', { class: 'badge violet', style: { marginLeft: '6px' } }, S.overview.pending_approvals) : null)));
 
   async function tick(force) {
     paintTabs();
     try {
-      if (current === 'tarefas') await tasksPane(pane, force);
+      if (current === 'hoje' || current === 'projetos') {
+        // Estes painéis são densos: refrescam ao entrar/agir e a cada ~30 s (o estado muda com o relógio).
+        if (!force && ++slowTicks % 12) return;
+        const refresh = () => tick(true);
+        await (current === 'hoje' ? todayPane : projectsPane)(pane, { refresh });
+      } else if (current === 'tarefas') await tasksPane(pane, force);
       else if (current === 'aprovacoes') await approvalsPane(pane, force);
       else if (current === 'provas') await evidencePane(pane, force);
       else await biPanel(pane, force);

@@ -6,14 +6,14 @@ import { openDb, migrate } from './lib/db.js';
 import { newId, clock, parseJson, json, notFound } from './lib/util.js';
 import { initAuth } from './auth.js';
 import { seedPersonal, seedProfessional } from './seed.js';
-import { seedDojoV1 } from './seed-dojo.js';
+import { seedDojoV1, seedDojoV2 } from './seed-dojo.js';
 import { getSettings } from './modules/settings.js';
 
 export const WORLD_DEFS = [
   { id: 'personal', name: 'Mundo Pessoal', kind: 'personal', policy: { execution: true, data: 'synthetic_only', d1: 'strict', label: 'Pessoal · dados fictícios' }, seed: seedPersonal },
   { id: 'professional', name: 'Mundo Profissional (desenho)', kind: 'professional', policy: { execution: false, data: 'design_only', d1: 'strict', label: 'Profissional · só desenho' }, seed: seedProfessional,
     // Atualizações de dados idempotentes, aplicadas uma vez também a BDs já existentes.
-    upgrades: [['seed_dojo_v1', seedDojoV1]] },
+    upgrades: [['seed_dojo_v1', seedDojoV1], ['seed_dojo_v2', seedDojoV2]] },
 ];
 
 export function createApp({ dataDir, deps = {}, passcode } = {}) {

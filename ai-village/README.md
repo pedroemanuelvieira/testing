@@ -26,11 +26,11 @@ Sem `VILLAGE_PASSCODE`, é gerado um passcode **mostrado uma vez** na consola. O
 | Destino | O que fazes lá |
 |---|---|
 | **Vila** | Mapa (SVG, noite, néon, madeira e vidro) **ou** lista — as mesmas ações. Cada **unidade** é um edifício; cada **agente** está à porta. Clica para conversar, ver tarefas, perfil. Estado real: *ocupado* só com tentativa de execução em curso |
-| **Trabalho** | Quadro de tarefas · **Aprovações** (ações **simuladas**, de uso único) · **Provas** · **Painel BI** (+ export CSV) |
+| **Trabalho** | **Hoje** (KPIs do dia, «precisa de mim», linha do tempo 0–24 h, rotinas agendadas, ML em produção) · **Projetos** (incl. ML) · Quadro de tarefas · **Aprovações** (ações **simuladas**, de uso único) · **Provas** · **Painel BI** (+ export CSV) |
 | **Ligações** | Inventário **honesto** de contas/modelos: «planeada», «demo», «ligada (com prova datada)», «degradada», «revogada» |
 | **Configuração** | **Organização** (unidades, funções, agentes — sem código), permissões de delegação, definições/retenção, auditoria (cadeia de hashes), capacidades, backup |
 
-**Dois mundos** (seletor no topo): **Pessoal** (dados fictícios; executa) e **Profissional** (só desenho nesta conta). O profissional tem a **equipa do Dojo**: 12 agentes em 9 salas (Comando, Sala de Reuniões, Sala do Futuro, Estúdio BI, Oficina, Sala do Kai, Torii, Forja, Conselho), as suas funções e as tarefas do brief (exemplos fictícios) — ver `server/seed-dojo.js`. Um orquestrador por mundo: *Kai Pessoal* / *Kai Profissional*. CEO e diretores são **cargos da app**, não orquestradores.
+**Dois mundos** (seletor no topo): **Pessoal** (dados fictícios; executa) e **Profissional** (só desenho nesta conta). O profissional tem a **equipa do Dojo**: 12 agentes em 9 salas (Comando, Sala de Reuniões, Sala do Futuro, Estúdio BI, Oficina, Sala do Kai, Torii, Forja, Conselho), as suas funções, as tarefas, as **9 rotinas agendadas** e os **11 projetos** (10 ML + Portal) do brief (exemplos fictícios) — ver `server/seed-dojo.js`. Um orquestrador por mundo: *Kai Pessoal* / *Kai Profissional*. CEO e diretores são **cargos da app**, não orquestradores.
 
 ![Conversa](docs/img/02-conversa-demo.png)
 
@@ -43,12 +43,15 @@ Concluir exige **resultado + prova**. Ações consequentes passam por **intenç�
 
 ### Para BI
 ![Painel BI](docs/img/04-painel-bi.png)
-KPIs (conclusão, cobertura de prova, p50/p95 de execução, tempo de ciclo, funil de aprovações) calculados na BD. **8 tabelas CSV** (`fact_task`, `fact_attempt`, `fact_approval`, `fact_message`, `fact_audit`, `dim_agent`, `dim_unit`, `dim_role`) — só metadados; liga com *Obter dados → Texto/CSV*.
+KPIs (conclusão, cobertura de prova, p50/p95 de execução, tempo de ciclo, funil de aprovações) calculados na BD. **11 tabelas CSV** (`fact_task`, `fact_attempt`, `fact_approval`, `fact_message`, `fact_audit`, `fact_routine_run`, `dim_agent`, `dim_unit`, `dim_role`, `dim_routine`, `dim_project`) — só metadados; liga com *Obter dados → Texto/CSV*.
 
 ## Adicionar agentes e funções (a tua pergunta-chave)
 
 Sem código: **Configuração → Organização → ＋ Função / ＋ Agente / ＋ Unidade** (um edifício novo aparece na vila). O servidor impede ciclos, um 2.º orquestrador e arquivar agentes com tarefas ativas sem reencaminhar. O retrato é editável (e aceita uma **fotografia real** tua).
 Para dar **execução automática** a uma capacidade nova: uma entrada em `server/modules/capabilities.js` (com `executor` determinístico) + um teste. Ver [`docs/ARCHITECTURE.md` §10](docs/ARCHITECTURE.md).
+
+### Rotinas: o que a app faz e não faz
+As rotinas correm **noutro ambiente** (Dojo/tenant). A app **não as executa**: guarda a agenda (hora de Lisboa, com horário de verão), recebe **registos de execução** (manuais ou importados, com guarda D1) e calcula honestamente o dia: *previstas · registadas · falharam/não correram · à espera do registo (1 h de tolerância) · por correr*. Um registo por slot; nunca em slots futuros.
 
 ## As tuas contas (pessoais e profissionais)
 
@@ -58,7 +61,7 @@ entrada de ficheiros **sintéticos/higienizados**, adaptador da **Claude API** (
 ## Qualidade e verificação
 
 ```bash
-npm test            # 38 testes: núcleo, worker, aprovações, chat/D1, ligações, segurança, durabilidade
+npm test            # 42 testes: núcleo, worker, aprovações, chat/D1, ligações, segurança, durabilidade
 npm run measure     # CA29: 30 execuções sequenciais, p95 vs metas H07
 npm run e2e         # opcional (precisa de Playwright): jornadas no browser num servidor limpo
 VILLAGE_BACKUP_PASSPHRASE=… npm run backup
@@ -92,6 +95,6 @@ server/   http.js · app.js · seed.js · auth.js · backup.js · worker-main.js
   modules/  org · tasks · worker · approvals · chat · connections · policy · audit · retention · bi · csv · d1 · capabilities …
   adapters/ demo.js · anthropic.js        migrations/ 001_core.sql · 002_bi_views.sql
 web/      index.html · css/style.css · js/ (village.js = mapa SVG · avatar.js = retratos · views/…)
-test/     38 testes (node:test)      scripts/  backup · restore · measure-latency · e2e-browser
+test/     42 testes (node:test)      scripts/  backup · restore · measure-latency · e2e-browser
 docs/     ARCHITECTURE · SPEC_TRACE · CONNECTORS
 ```

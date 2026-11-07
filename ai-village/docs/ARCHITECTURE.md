@@ -64,12 +64,13 @@ As fichas do ecossistema (Ponte, Oráculo, Apolo, Feynman, Sócrates, Auditor 80
 | `modules/artifacts.js` | artefactos com digest, Evidence |
 | `modules/audit.js` | auditoria append-only com **cadeia de hashes** |
 | `modules/retention.js` | expurgo, tombstones, ficheiro lateral fora dos backups |
+| `modules/routines.js` + `schedule.js` | rotinas agendadas (Lisboa/DST), registos de execução, painel «Hoje», projetos |
 | `modules/bi.js` | KPIs + export CSV das vistas em estrela |
 | `backup.js` | backup AES-256-GCM e restauro isolado |
 
 ## 4. Modelo de dados (por mundo)
 
-Entidades do REQUISITOS §6 → tabelas: `accounts`, `org_units`, `roles`, `agents`(+`agent_roles`), `permissions`, `conversations`, `messages`, `tasks`, `execution_attempts`, `artifacts`, `evidence`, `connections`, `action_intents`, `approvals`, `action_effects`, `audit_events`, `tombstones`. Todas têm `id` opaco, `world_id`, `created_at/updated_at`, `schema_version` e `record_version` (concorrência otimista: `PATCH` exige `expected_version`).
+Entidades do REQUISITOS §6 → tabelas: `accounts`, `org_units`, `roles`, `agents`(+`agent_roles`), `permissions`, `conversations`, `messages`, `tasks`, `execution_attempts`, `artifacts`, `evidence`, `connections`, `action_intents`, `approvals`, `action_effects`, `audit_events`, `tombstones`, `projects`, `routines`, `routine_runs` (migração 003; `tasks.project_id`). Todas têm `id` opaco, `world_id`, `created_at/updated_at`, `schema_version` e `record_version` (concorrência otimista: `PATCH` exige `expected_version`).
 
 **Invariantes garantidas pela própria BD** (não só pelo código):
 

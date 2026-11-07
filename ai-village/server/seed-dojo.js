@@ -15,6 +15,8 @@ import { createUnit, createRole, createAgent, updateAgent, updateUnit, archiveUn
 import { grantPermission, OWNER } from './modules/policy.js';
 import { createTask, startManual, completeManual, transitionTask } from './modules/tasks.js';
 import { audit } from './modules/audit.js';
+import { createProject, createRoutine, recordRun } from './modules/routines.js';
+import { lastSlots } from './modules/schedule.js';
 
 const look = (o) => ({ type: 'procedural', ...o });
 const ECO_NOTE = ' (Entidade da app que reflete a ficha do Dojo; não é nem altera o agente original.)';
@@ -155,4 +157,67 @@ export function seedDojoV1(w) {
   }
   audit(w, { actor: 'system:seed', action: 'world.seed_dojo_v1', resource: w.id });
   return { units: U, roles: R, agents: A };
+}
+
+// ---------------------------------------------------------------------------------------------
+// v2 — Projetos (ML + Portal) e rotinas agendadas do Dojo, com as últimas execuções do brief.
+// As execuções importadas ligam-se aos slots MAIS RECENTES já passados (nunca a slots futuros),
+// com source='import' e nota a dizer que são exemplos fictícios do brief.
+
+const PROJECTS = [
+  ['910', 'Qualidade dos dados', 'ml', 'in_production', 'dias úteis', '6 de 7 modelos prontos', 'warn', ''],
+  ['911', 'Ciclo de vida', 'ml', 'in_production', 'semanal', 'Estável', 'ok', ''],
+  ['915', 'Desvios preço-volume-mix', 'ml', 'in_production', 'mensal', 'Estável', 'ok', ''],
+  ['918', 'ABC-XYZ', 'ml', 'in_production', 'mensal', 'Com avisos', 'warn', ''],
+  ['919', 'Coortes', 'ml', 'in_production', 'mensal', 'Estável', 'ok', ''],
+  ['912', 'Churn', 'ml', 'preparing', '', '', 'none', 'Comparar com baseline'],
+  ['913', 'Procura', 'ml', 'preparing', '', '', 'none', 'Testar média de 13 semanas'],
+  ['914', 'Ruturas', 'ml', 'blocked', '', '', 'none', 'Falta ligação de referências'],
+  ['916', 'Basket', 'ml', 'on_demand', '', '', 'none', 'Precisa de limiar de negócio'],
+  ['917', 'ROI', 'ml', 'on_demand', '', '', 'none', 'Corre por campanha'],
+  ['', 'Portal', 'general', 'active', '', 'Demo em preparação', 'none', 'Preparar demo do portal'],
+];
+
+// [agente, título, agenda, projeto(nº), execuções do brief (mais antiga → mais recente)]
+const ROUTINES = [
+  ['Amaterasu', 'Briefing do dia', { kind: 'weekdays', times: ['09:26'] }, null, [['ok', '3 pedidos e 2 emails a responder; dados OK']]],
+  ['Tsukuyomi', 'Triagem de mensagens', { kind: 'daily', times: ['09:04', '12:04', '15:04', '18:04'] }, null, [['failed', 'Limite de uso atingido']]],
+  ['Kenshin', 'Saúde do ETL', { kind: 'weekdays', times: ['09:08'] }, null, [['warn', '2 processos com falha de 41']]],
+  ['Tetsuo', '910 · Qualidade para ML', { kind: 'weekdays', times: ['08:47'] }, '910', [['ok', '6 de 7 modelos prontos']]],
+  ['Tetsuo', '911 · Ciclo de vida', { kind: 'weekly', weekday: 2, times: ['09:07'] }, '911', [['ok', 'em risco estável; 9 novos em risco']]],
+  ['Hachiman', 'Vendas da semana', { kind: 'weekly', weekday: 1, times: ['09:21'] }, null, [['ok', '+3,1% face ao ano anterior']]],
+  ['Kenshin', 'Vigia do portal', { kind: 'weekdays', times: ['18:12'] }, 'Portal', []],
+  ['Amaterasu', 'Fecho da semana', { kind: 'weekly', weekday: 5, times: ['16:47'] }, null, []],
+  ['Kenshin', 'Arquivista', { kind: 'weekly', weekday: 0, times: ['07:37'] }, null, [['ok', '120 documentos antigos apagados']]],
+];
+const TASK_PROJECT = { 'dojo-t1': '910', 'dojo-t2': '914', 'dojo-t3': 'Portal', 'dojo-t5': '911' };
+
+export function seedDojoV2(w) {
+  const db = w.db;
+  const agentId = (n) => db.prepare("SELECT id FROM agents WHERE display_name=? AND lifecycle_status<>'archived'").get(n)?.id;
+  const P = {};
+  for (const [number, title, kind, state, cadence, last, lastStatus, next] of PROJECTS) {
+    const key = number || title;
+    const found = db.prepare("SELECT id FROM projects WHERE world_id=? AND title=? AND lifecycle_status='active'").get(w.id, title);
+    P[key] = found ? found.id : createProject(w, OWNER, {
+      number, title, kind, state, cadence, last_point: last, last_point_status: lastStatus, next_step: next,
+      owner_agent_id: agentId(kind === 'ml' ? 'Tetsuo' : 'Raiden'),
+    }).id;
+  }
+  for (const [key, num] of Object.entries(TASK_PROJECT)) {
+    db.prepare('UPDATE tasks SET project_id=? WHERE idempotency_key=? AND account_id=? AND project_id IS NULL').run(P[num], key, w.accountId);
+  }
+  const now = clock.now();
+  for (const [agent, title, schedule, proj, runs] of ROUTINES) {
+    if (db.prepare("SELECT 1 FROM routines WHERE world_id=? AND title=? AND lifecycle_status='active'").get(w.id, title)) continue;
+    const r = createRoutine(w, OWNER, { agent_id: agentId(agent), title, schedule, project_id: proj ? P[proj] : undefined });
+    const slots = lastSlots(schedule, now, runs.length);
+    runs.forEach(([status, note], i) => {
+      if (!slots[i]) return;
+      const slotIso = new Date(slots[i]).toISOString();
+      recordRun(w, OWNER, r.id, { status, note: `${note} — exemplo do brief Dojo (fictício)`, slot_at: slotIso, recorded_at: new Date(slots[i] + 3 * 60000).toISOString() }, { source: 'import' });
+    });
+  }
+  audit(w, { actor: 'system:seed', action: 'world.seed_dojo_v2', resource: w.id });
+  return { projects: P };
 }

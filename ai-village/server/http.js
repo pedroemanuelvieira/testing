@@ -20,6 +20,7 @@ import * as aud from './modules/audit.js';
 import * as settingsm from './modules/settings.js';
 import * as ret from './modules/retention.js';
 import { runOnce } from './modules/worker.js';
+import * as rot from './modules/routines.js';
 import { capabilityList } from './modules/capabilities.js';
 import { createBackup } from './backup.js';
 
@@ -163,6 +164,17 @@ export function buildRoutes(app) {
     const table = c.params.table.replace(/\.csv$/, '');
     c.raw = { type: 'text/csv; charset=utf-8', body: bi.exportCsv(c.w, table), headers: { 'Content-Disposition': `attachment; filename="${c.w.id}_${table}.csv"` } };
   });
+
+  // ---- hoje · rotinas · projetos ----
+  add('GET', W('/today'), (c) => rot.today(c.w));
+  add('GET', W('/routines'), (c) => rot.listRoutines(c.w));
+  add('POST', W('/routines'), (c) => { c.status = 201; return rot.createRoutine(c.w, OWNER, c.body); });
+  add('PATCH', W('/routines/:id'), (c) => rot.updateRoutine(c.w, OWNER, c.params.id, c.body));
+  add('POST', W('/routines/:id/runs'), (c) => { c.status = 201; return rot.recordRun(c.w, OWNER, c.params.id, c.body); });
+  add('GET', W('/projects'), (c) => rot.listProjects(c.w));
+  add('POST', W('/projects'), (c) => { c.status = 201; return rot.createProject(c.w, OWNER, c.body); });
+  add('GET', W('/projects/:id'), (c) => rot.getProject(c.w, c.params.id));
+  add('PATCH', W('/projects/:id'), (c) => rot.updateProject(c.w, OWNER, c.params.id, c.body));
 
   // ---- worker ----
   add('GET', W('/worker/status'), (c) => workerStatus(c.w));

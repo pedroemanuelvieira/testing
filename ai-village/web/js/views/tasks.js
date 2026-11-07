@@ -12,7 +12,7 @@ function parseHeader(text) {
   return first.split(delim).map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
 }
 
-export function openTaskForm({ agentId, capability, title, conversationId, parentTaskId, onDone } = {}) {
+export function openTaskForm({ agentId, capability, title, conversationId, parentTaskId, projectId, onDone } = {}) {
   const caps = (S.overview?.capabilities || []);
   const form = {
     title: h('input', { type: 'text', maxLength: 160, value: title || '', 'data-autofocus': '', required: true }),
@@ -21,6 +21,7 @@ export function openTaskForm({ agentId, capability, title, conversationId, paren
       caps.map((c) => h('option', { value: c.id, selected: c.id === capability }, `${c.label}${c.auto_execute ? ' ⚙ executa no worker' : ''}`))),
     agent: h('select', {}),
     priority: h('select', {}, [1, 2, 3, 4, 5].map((p) => h('option', { value: p, selected: p === 3 }, `${p}${p === 1 ? ' (mais alta)' : p === 5 ? ' (mais baixa)' : ''}`))),
+    project: h('select', {}, h('option', { value: '' }, '— sem projeto —')),
     by: h('select', {}, h('option', { value: '' }, 'Pedro (direto)'), agents().filter((a) => a.lifecycle_status === 'active').map((a) => h('option', { value: a.id }, `${a.display_name} (delega em nome de…)`))),
     csv: h('textarea', { placeholder: 'registo,grupo,quantidade\nS01,A,2\n…', style: { fontFamily: 'var(--mono)', minHeight: '110px' }, spellcheck: false }),
     file: h('input', { type: 'file', accept: '.csv,text/csv,text/plain' }),
@@ -53,6 +54,9 @@ export function openTaskForm({ agentId, capability, title, conversationId, paren
     if (!form.title.value) form.title.value = `Validar ${f.name}`;
   });
   form.csv.addEventListener('input', () => loadCols(form.csv.value));
+  get(`${W()}/projects`).then((ps) => {
+    form.project.append(...ps.map((p) => h('option', { value: p.id, selected: p.id === projectId }, `${p.number ? `${p.number} · ` : ''}${p.title}`)));
+  }).catch(() => {});
   if (agentId) form.agent.value = agentId;
   refreshAgents();
 
@@ -64,6 +68,7 @@ export function openTaskForm({ agentId, capability, title, conversationId, paren
       h('div', { class: 'grid2' }, field('Capacidade', form.capability, null), field('Atribuir a', form.agent)), hint,
       h('div', { class: 'grid2', style: { marginTop: '10px' } }, field('Prioridade proposta', form.priority, 'A prioridade final é aprovada por ti (D6).'),
         field('Criar em nome de', form.by, 'Se escolheres um agente, o servidor só aceita com permissão de delegação explícita.')),
+      field('Projeto', form.project),
       csvBox, err),
     actions: [h('button', { class: 'btn', onclick: () => m.close() }, 'Cancelar'), submit],
   });
@@ -73,7 +78,7 @@ export function openTaskForm({ agentId, capability, title, conversationId, paren
       const cap = caps.find((c) => c.id === form.capability.value);
       const body = {
         title: form.title.value, objective: form.objective.value, capability: cap?.id || undefined, assigned_agent_id: form.agent.value || undefined,
-        proposed_priority: Number(form.priority.value), delegated_by: form.by.value || undefined, parent_task_id: parentTaskId, conversation_id: conversationId,
+        proposed_priority: Number(form.priority.value), delegated_by: form.by.value || undefined, parent_task_id: parentTaskId, conversation_id: conversationId, project_id: form.project.value || undefined,
       };
       if (cap?.needs_input) {
         if (!form.csv.value.trim()) throw new ApiError(400, { error: { message: 'Carrega ou cola o CSV sintético.' } });

@@ -38,7 +38,7 @@ function columns(rows) {
 const TABLES = [
   ['fact_task', 'Tarefas (1 linha por tarefa): estado, agente, tentativas, tempo de ciclo'], ['fact_attempt', 'Tentativas de execução: duração, erro, executor'],
   ['fact_approval', 'Aprovações: estado, tempo até decisão'], ['fact_message', 'Mensagens (só metadados: modo, autor, nº de caracteres)'],
-  ['fact_audit', 'Auditoria minimizada (ação, resultado, motivo)'], ['dim_agent', 'Dimensão agentes (+ funções, unidade, superior)'], ['dim_unit', 'Dimensão unidades'], ['dim_role', 'Dimensão funções/cargos'],
+  ['fact_audit', 'Auditoria minimizada (ação, resultado, motivo)'], ['fact_routine_run', 'Execuções de rotinas registadas: estado, atraso face ao slot'], ['dim_agent', 'Dimensão agentes (+ funções, unidade, superior)'], ['dim_routine', 'Dimensão rotinas (agenda, agente, projeto)'], ['dim_project', 'Dimensão projetos (ML e outros)'], ['dim_unit', 'Dimensão unidades'], ['dim_role', 'Dimensão funções/cargos'],
 ];
 
 export async function biPanel(el) {

@@ -65,7 +65,7 @@ export function updateVersioned(w, table, id, expected, sets) {
 
 // Objetos de dados/execução pertencem a uma CONTA dentro do mundo (CA18): outra conta recebe 404,
 // sem revelar a existência. A estrutura organizacional (agentes, unidades, funções) é do mundo.
-export const ACCOUNT_SCOPED = new Set(['tasks', 'conversations', 'messages', 'artifacts', 'connections', 'approvals', 'action_intents', 'evidence', 'execution_attempts']);
+export const ACCOUNT_SCOPED = new Set(['tasks', 'conversations', 'messages', 'artifacts', 'connections', 'approvals', 'action_intents', 'evidence', 'execution_attempts', 'projects', 'routines', 'routine_runs']);
 export function mustGet(w, table, id, label = 'Recurso') {
   const row = id ? w.db.prepare(`SELECT * FROM ${table} WHERE id = ? AND world_id = ?`).get(id, w.id) : null;
   if (!row || (ACCOUNT_SCOPED.has(table) && row.account_id && w.accountId && row.account_id !== w.accountId)) throw notFound(`${label} não encontrado`);
