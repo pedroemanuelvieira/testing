@@ -30,7 +30,7 @@ Sem `VILLAGE_PASSCODE`, é gerado um passcode **mostrado uma vez** na consola. O
 | **Ligações** | Inventário **honesto** de contas/modelos: «planeada», «demo», «ligada (com prova datada)», «degradada», «revogada» |
 | **Configuração** | **Organização** (unidades, funções, agentes — sem código), permissões de delegação, definições/retenção, auditoria (cadeia de hashes), capacidades, backup |
 
-**Dois mundos** (seletor no topo): **Pessoal** (dados fictícios; executa) e **Profissional** (só desenho nesta conta). Um orquestrador por mundo: *Kai Pessoal* / *Kai Profissional*. CEO e diretores são **cargos da app**, não orquestradores.
+**Dois mundos** (seletor no topo): **Pessoal** (dados fictícios; executa) e **Profissional** (só desenho nesta conta). O profissional tem a **equipa do Dojo**: 12 agentes em 9 salas (Comando, Sala de Reuniões, Sala do Futuro, Estúdio BI, Oficina, Sala do Kai, Torii, Forja, Conselho), as suas funções e as tarefas do brief (exemplos fictícios) — ver `server/seed-dojo.js`. Um orquestrador por mundo: *Kai Pessoal* / *Kai Profissional*. CEO e diretores são **cargos da app**, não orquestradores.
 
 ![Conversa](docs/img/02-conversa-demo.png)
 
@@ -58,7 +58,7 @@ entrada de ficheiros **sintéticos/higienizados**, adaptador da **Claude API** (
 ## Qualidade e verificação
 
 ```bash
-npm test            # 35 testes: núcleo, worker, aprovações, chat/D1, ligações, segurança, durabilidade
+npm test            # 38 testes: núcleo, worker, aprovações, chat/D1, ligações, segurança, durabilidade
 npm run measure     # CA29: 30 execuções sequenciais, p95 vs metas H07
 npm run e2e         # opcional (precisa de Playwright): jornadas no browser num servidor limpo
 VILLAGE_BACKUP_PASSPHRASE=… npm run backup
@@ -92,6 +92,6 @@ server/   http.js · app.js · seed.js · auth.js · backup.js · worker-main.js
   modules/  org · tasks · worker · approvals · chat · connections · policy · audit · retention · bi · csv · d1 · capabilities …
   adapters/ demo.js · anthropic.js        migrations/ 001_core.sql · 002_bi_views.sql
 web/      index.html · css/style.css · js/ (village.js = mapa SVG · avatar.js = retratos · views/…)
-test/     35 testes (node:test)      scripts/  backup · restore · measure-latency · e2e-browser
+test/     38 testes (node:test)      scripts/  backup · restore · measure-latency · e2e-browser
 docs/     ARCHITECTURE · SPEC_TRACE · CONNECTORS
 ```

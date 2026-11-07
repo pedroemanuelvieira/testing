@@ -211,13 +211,14 @@ export function renderVillage({ units, agents, world }) {
   const active = units.filter((u) => u.lifecycle_status === 'active').sort((a, b) => a.plot - b.plot);
   const extra = Math.max(0, active.length - SLOTS.length);
   const rows = Math.ceil(extra / 4);
-  const H = active.length <= 3 ? 860 : 1120 + rows * 300;
+  const H = active.length <= 3 ? 860 : 1120 + rows * 400;
   const { stars, towers, petals } = backdrop(H);
 
   const slots = [...SLOTS];
-  for (let i = 0; i < extra; i++) slots.push([200 + (i % 4) * 400, 1140 + Math.floor(i / 4) * 300, .9]);
+  for (let i = 0; i < extra; i++) slots.push([200 + (i % 4) * 400, 1330 + Math.floor(i / 4) * 400, .9]);
 
   let buildings = '';
+  let tokens = ''; // agentes numa camada própria, sempre por cima dos edifícios e decorações
   const order = active.map((u, i) => ({ u, slot: slots[i] })).sort((a, b) => a.slot[1] - b.slot[1]);
   for (const { u, slot } of order) {
     const [sx, sy, sc] = slot;
@@ -234,8 +235,8 @@ export function renderVillage({ units, agents, world }) {
       </g>
       <rect class="focus-ring" x="${sx - 180 * sc}" y="${sy - 250 * sc}" width="${360 * sc}" height="${300 * sc}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="8 6" rx="12"/>
     </g>`;
-    shown.forEach((a, i) => { buildings += agentToken(a, startX + i * gap, ay + 24 + (i % 2) * 40, 25, { world }); });
-    if (more > 0) buildings += `<g class="unit" data-unit="${esc(u.id)}" role="button" tabindex="0" aria-label="Mais ${more} agentes na unidade ${esc(u.name)}" transform="translate(${startX + shown.length * gap},${ay + 24 + (shown.length % 2) * 40})"><circle r="25" fill="#10163a" stroke="rgba(139,156,255,.6)" stroke-width="2"/><text y="6" text-anchor="middle" font-size="16" font-weight="700" fill="#eef1ff">+${more}</text></g>`;
+    shown.forEach((a, i) => { tokens += agentToken(a, startX + i * gap, ay + 24 + (i % 2) * 40, 25, { world }); });
+    if (more > 0) tokens += `<g class="unit" data-unit="${esc(u.id)}" role="button" tabindex="0" aria-label="Mais ${more} agentes na unidade ${esc(u.name)}" transform="translate(${startX + shown.length * gap},${ay + 24 + (shown.length % 2) * 40})"><circle r="25" fill="#10163a" stroke="rgba(139,156,255,.6)" stroke-width="2"/><text y="6" text-anchor="middle" font-size="16" font-weight="700" fill="#eef1ff">+${more}</text></g>`;
   }
 
   const hubX = 800, hubY = 650;
@@ -271,6 +272,7 @@ export function renderVillage({ units, agents, world }) {
   ${lanterns}
   <g transform="translate(40,700)"><rect x="-10" y="-80" width="20" height="220" rx="9" fill="#3a2418"/>${[[-50, -110, 60], [30, -150, 70], [-10, -190, 60], [70, -100, 50], [-80, -70, 46]].map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${['#f9a8d4', '#f58cc0', '#fbc4e0'][i % 3]}" opacity=".88"/>`).join('')}</g>
   <g transform="translate(1565,720)"><rect x="-10" y="-80" width="20" height="200" rx="9" fill="#3a2418"/>${[[-40, -110, 56], [20, -150, 64], [-6, -190, 54], [-70, -80, 44]].map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${['#f9a8d4', '#f58cc0', '#fbc4e0'][i % 3]}" opacity=".88"/>`).join('')}</g>
+  ${tokens}
   ${petals}
   </svg>`;
 }

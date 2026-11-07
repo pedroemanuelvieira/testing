@@ -59,14 +59,15 @@ test('CA17 · mundos isolados: IDs, artefactos, auditoria, BI e exportação nã
     assert.ok(!JSON.stringify(r.data).includes('Só pessoal'), 'sem fuga de conteúdo/existência');
   }
   // listas, auditoria, KPIs e CSV do outro mundo não contêm nada do pessoal
-  assert.deepEqual((await s.api('GET', '/api/w/professional/tasks')).data, []);
-  assert.equal((await s.api('GET', '/api/w/professional/bi/kpis')).data.tasks_total, 0);
+  const proTasks = (await s.api('GET', '/api/w/professional/tasks')).data;
+  assert.ok(proTasks.every((t) => t.world_id === 'professional' && t.id !== tk.id), 'nenhuma tarefa do pessoal no profissional');
+  assert.equal((await s.api('GET', '/api/w/professional/bi/kpis')).data.tasks_total, proTasks.length, 'KPIs só contam o próprio mundo');
   assert.ok(!JSON.stringify((await s.api('GET', '/api/w/professional/audit?limit=300')).data).includes(tk.id));
   const csv = (await s.raw('GET', '/api/w/professional/bi/export/fact_task.csv')).data;
   assert.ok(!String(csv).includes(tk.id));
   assert.equal((await s.api('GET', '/api/w/inexistente/overview')).status, 404);
   // delegação cruzada: agente profissional não pode ser atribuído no pessoal
-  const atlas = qw.db.prepare("SELECT id FROM agents WHERE display_name='Atlas BI'").get();
+  const atlas = qw.db.prepare("SELECT id FROM agents WHERE display_name='Raiden'").get();
   assert.equal((await s.api('POST', '/api/w/personal/tasks', { title: 'x', assigned_agent_id: atlas.id })).status, 404);
 });
 

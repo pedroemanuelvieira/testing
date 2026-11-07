@@ -109,8 +109,12 @@ function chatPane(pane, agent) {
   }
   sel.addEventListener('change', () => open(state.convs.find((c) => c.id === sel.value)));
   newBtn.addEventListener('click', () => busy(newBtn, async () => { try { await createConv(mode.value); } catch (e) { toast(errMsg(e), 'error'); } }));
+  let ready = Promise.resolve();
   const doSend = () => busy(send, async () => {
-    const text = input.value.trim(); if (!text || !state.conv) return;
+    await ready; // a conversa carrega de forma assíncrona: não perder um Enter rápido
+    const text = input.value.trim();
+    if (!text) return;
+    if (!state.conv) { toast('A conversa ainda não está disponível. Tenta de novo.', 'error'); return; }
     input.value = '';
     const pending = h('div', { class: 'msg owner' }, text, h('div', { class: 'meta' }, 'a enviar…'));
     list.append(pending); list.scrollTop = list.scrollHeight;
@@ -125,7 +129,7 @@ function chatPane(pane, agent) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); doSend(); } });
   pane.append(h('div', { class: 'row' }, sel, newBtn, mode), banner, h('div', { class: 'chat' }, list, h('div', { class: 'composer' }, input, send)));
   sel.style.cssText = 'width:auto;flex:3 1 200px'; mode.style.cssText = 'width:auto;flex:2 1 150px';
-  init().catch((e) => toast(errMsg(e), 'error'));
+  ready = init().catch((e) => toast(errMsg(e), 'error'));
 }
 
 // ---------------- tarefas ----------------

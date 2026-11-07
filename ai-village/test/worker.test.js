@@ -154,7 +154,7 @@ test('Capacidades: perfil de colunas e relatório de KPIs (BI) executados no wor
 test('Mundo profissional é só desenho: sem execução, sem ficheiros de dados', async (t) => {
   const s = await startServer(); t.after(() => s.close()); await s.login();
   const org = (await s.api('GET', '/api/w/professional/org')).data;
-  const ag = org.agents.find((a) => a.display_name === 'Atlas BI');
+  const ag = org.agents.find((a) => a.display_name === 'Raiden');
   assert.equal((await s.api('POST', '/api/w/professional/artifacts', { name: 'x.csv', kind: 'csv', content: 'a\n1\n' })).data.error.code, 'world_design_only');
   assert.equal((await s.api('POST', '/api/w/professional/tasks', { title: 'x', capability: 'report.village_kpis', assigned_agent_id: ag.id })).data.error.code, 'world_design_only');
   assert.equal((await s.api('POST', '/api/w/professional/worker/run')).status, 403);

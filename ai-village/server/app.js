@@ -6,11 +6,14 @@ import { openDb, migrate } from './lib/db.js';
 import { newId, clock, parseJson, json, notFound } from './lib/util.js';
 import { initAuth } from './auth.js';
 import { seedPersonal, seedProfessional } from './seed.js';
+import { seedDojoV1 } from './seed-dojo.js';
 import { getSettings } from './modules/settings.js';
 
 export const WORLD_DEFS = [
   { id: 'personal', name: 'Mundo Pessoal', kind: 'personal', policy: { execution: true, data: 'synthetic_only', d1: 'strict', label: 'Pessoal · dados fictícios' }, seed: seedPersonal },
-  { id: 'professional', name: 'Mundo Profissional (desenho)', kind: 'professional', policy: { execution: false, data: 'design_only', d1: 'strict', label: 'Profissional · só desenho' }, seed: seedProfessional },
+  { id: 'professional', name: 'Mundo Profissional (desenho)', kind: 'professional', policy: { execution: false, data: 'design_only', d1: 'strict', label: 'Profissional · só desenho' }, seed: seedProfessional,
+    // Atualizações de dados idempotentes, aplicadas uma vez também a BDs já existentes.
+    upgrades: [['seed_dojo_v1', seedDojoV1]] },
 ];
 
 export function createApp({ dataDir, deps = {}, passcode } = {}) {
@@ -49,6 +52,11 @@ export function createApp({ dataDir, deps = {}, passcode } = {}) {
     if (!seeded) {
       def.seed(w);
       w.db.prepare("INSERT OR REPLACE INTO meta(key,value) VALUES ('seeded','1')").run();
+    }
+    for (const [key, fn] of def.upgrades || []) {
+      if (w.db.prepare('SELECT 1 FROM meta WHERE key=?').get(key)) continue;
+      fn(w); // cada passo é idempotente: se falhar a meio, repete-se no próximo arranque
+      w.db.prepare("INSERT OR REPLACE INTO meta(key,value) VALUES (?, ?)").run(key, new Date().toISOString());
     }
     cache.set(def.id, w);
   }

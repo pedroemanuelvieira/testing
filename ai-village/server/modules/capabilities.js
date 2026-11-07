@@ -57,6 +57,13 @@ export const CAPABILITIES = {
   'bi.requirements': { label: 'Requisitos e stories de BI', category: 'bi', keywords: ['story', 'stories', 'épico', 'requisitos'] },
   'impl.build': { label: 'Implementação em plataformas', category: 'execução', keywords: ['implementar', 'construir', 'copilot'] },
   'ds.baseline': { label: 'Ciência de dados e baselines', category: 'dados', keywords: ['baseline', 'ml', 'previsão', 'modelo preditivo'] },
+  // Funções do Dojo (equipa profissional) — trabalho manual nesta conta (mundo só de desenho).
+  'ops.briefing': { label: 'Briefing do dia', category: 'direção', keywords: ['briefing', 'morning', 'resumo do dia'] },
+  'ops.triage': { label: 'Triagem de mensagens', category: 'execução', keywords: ['triagem', 'mensagens', 'emails', 'pedidos'] },
+  'bi.insights': { label: 'Quebras e oportunidades', category: 'bi', keywords: ['quebras', 'oportunidades', 'desvios', 'anomalias'] },
+  'bi.sales_weekly': { label: 'Vendas da semana', category: 'bi', keywords: ['vendas', 'semana', 'semanal'] },
+  'data.etl': { label: 'Automação e ETL', category: 'dados', keywords: ['etl', 'automação', 'pipeline', 'processos'] },
+  'skills.test': { label: 'Skills e testes', category: 'tecnologia', keywords: ['skill', 'skills', 'testes', 'lab'] },
 };
 
 export const capabilityList = () => Object.entries(CAPABILITIES).map(([id, c]) => ({
