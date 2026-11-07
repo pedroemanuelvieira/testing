@@ -8,7 +8,7 @@ const W = 1600;
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 const STATUS_COLOR = { disponivel: '#34d399', ocupado: '#22d3ee', bloqueado: '#fbbf24', inativo: '#7480b3', arquivado: '#7480b3' };
-const STATUS_GLYPH = { disponivel: '●', ocupado: '⚙', bloqueado: '!', inativo: '⏸', arquivado: '▫' };
+const STATUS_GLYPH = { disponivel: '●', ocupado: '⚙', bloqueado: '!', inativo: '‖', arquivado: '▫' };
 const STATUS_PT = { disponivel: 'disponível', ocupado: 'ocupado', bloqueado: 'bloqueado', inativo: 'inativo', arquivado: 'arquivado' };
 
 // slots [x, baselineY, scale] — fila de trás (rio ao fundo) e fila da frente

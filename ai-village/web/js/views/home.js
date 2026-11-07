@@ -61,7 +61,7 @@ export function homeView(root) {
       h('span', { class: 'chip' }, S.overview.world.policy.label), h('span', { class: 'chip' }, 'retratos provisórios')));
     stage.replaceChildren(wrap, h('div', { class: 'legend' },
       h('span', {}, h('span', { class: 'badge ok' }, '● disponível')), h('span', {}, h('span', { class: 'badge cyan' }, '⚙ ocupado'), ' só com tentativa real em curso'),
-      h('span', {}, h('span', { class: 'badge warn' }, '! bloqueado')), h('span', {}, h('span', { class: 'badge dim' }, '⏸ inativo')), h('span', {}, h('span', { class: 'badge gold' }, '★ orquestrador')),
+      h('span', {}, h('span', { class: 'badge warn' }, '! bloqueado')), h('span', {}, h('span', { class: 'badge dim' }, '‖ inativo')), h('span', {}, h('span', { class: 'badge gold' }, '★ orquestrador')),
       h('span', { class: 'faint' }, 'Clica num edifício ou num agente. A lista tem as mesmas ações.')));
   }
 

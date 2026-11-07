@@ -168,7 +168,7 @@ export const ACTIVITY = {
   disponivel: { label: 'Disponível', icon: '●', hint: 'Sem tentativa de execução ativa.' },
   ocupado: { label: 'Ocupado', icon: '⚙', hint: 'Há uma tentativa de execução real em curso.' },
   bloqueado: { label: 'Bloqueado', icon: '!', hint: 'Tem tarefas falhadas ou bloqueadas à espera de decisão.' },
-  inativo: { label: 'Inativo', icon: '⏸', hint: 'Desativado: não recebe novos trabalhos.' },
+  inativo: { label: 'Inativo', icon: '‖', hint: 'Desativado: não recebe novos trabalhos.' },
   arquivado: { label: 'Arquivado', icon: '▫', hint: 'Arquivado: histórico preservado.' },
 };
 export const activityBadge = (st) => {

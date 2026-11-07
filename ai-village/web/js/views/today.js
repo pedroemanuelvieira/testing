@@ -15,7 +15,7 @@ export const RUN = {
   awaiting: { label: 'À espera do registo', icon: '⧗', color: '#60a5fa', cls: 'info' },
   pending: { label: 'Ainda por correr', icon: '○', color: '#a3add9', cls: 'dim' },
   none: { label: 'Sem registo ainda', icon: '–', color: '#7480b3', cls: 'dim' },
-  disabled: { label: 'Desativada', icon: '⏸', color: '#7480b3', cls: 'dim' },
+  disabled: { label: 'Desativada', icon: '‖', color: '#7480b3', cls: 'dim' },
 };
 export const runChip = (st) => { const r = RUN[st] || RUN.none; return h('span', { class: `badge ${r.cls}` }, h('span', { 'aria-hidden': 'true' }, r.icon), ' ', r.label); };
 export const PROJ = {

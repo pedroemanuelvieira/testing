@@ -155,7 +155,7 @@ function profilePane(pane, agent, repaint, drawer) {
   actions.append(h('button', { class: 'btn', onclick: () => openAgentEditor(agent, { onSaved: async () => { await loadWorld(); repaint(); } }) }, '✎ Editar'));
   actions.append(h('button', { class: 'btn', onclick: async () => {
     try { await (await import('../api.js')).patch(`${W()}/agents/${agent.id}`, { lifecycle_status: agent.lifecycle_status === 'active' ? 'deactivated' : 'active', expected_version: agent.record_version }); await loadWorld(); repaint(); toast('Estado atualizado.'); } catch (e) { toast(errMsg(e), 'error'); }
-  } }, agent.lifecycle_status === 'active' ? '⏸ Desativar' : '▶ Reativar'));
+  } }, agent.lifecycle_status === 'active' ? '‖ Desativar' : '▶ Reativar'));
   actions.append(h('button', { class: 'btn danger', onclick: async () => {
     try {
       await post(`${W()}/agents/${agent.id}/archive`, { expected_version: agent.record_version });
