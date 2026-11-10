@@ -1,0 +1,24 @@
+/// Calendário próprio do modelo (marcado como tabela de datas).
+table Calendario
+	lineageTag: 11111111-0000-0000-0000-000000000004
+	dataCategory: Time
+
+	column Data
+		dataType: dateTime
+		isKey
+		summarizeBy: none
+		sourceColumn: Data
+
+	column Ano
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: Ano
+
+	column Mes
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Mes
+
+	partition Calendario = calculated
+		mode: import
+		source = CALENDARAUTO()

@@ -1,0 +1,9 @@
+{
+  "_nota": "Exemplo. Copiar para .mcp.json e ligar apenas as fontes aprovadas pela organização, só em leitura. Sem credenciais neste ficheiro.",
+  "mcpServers": {
+    "dwh": {
+      "command": "<COMANDO_DO_SERVIDOR_MCP_DO_DWH>",
+      "args": ["--so-leitura"]
+    }
+  }
+}

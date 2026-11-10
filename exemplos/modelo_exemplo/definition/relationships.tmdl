@@ -1,0 +1,12 @@
+relationship 22222222-0000-0000-0000-000000000001
+	fromColumn: Vendas.ClienteId
+	toColumn: Clientes.ClienteId
+
+relationship 22222222-0000-0000-0000-000000000002
+	crossFilteringBehavior: bothDirections
+	fromColumn: Vendas.ProdutoId
+	toColumn: Produtos.ProdutoId
+
+relationship 22222222-0000-0000-0000-000000000003
+	fromColumn: Vendas.Data
+	toColumn: Calendario.Data

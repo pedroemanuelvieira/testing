@@ -1,0 +1,4 @@
+role 'Regiao Norte'
+	modelPermission: read
+
+	tablePermission Clientes = Clientes[Regiao] = "Norte"

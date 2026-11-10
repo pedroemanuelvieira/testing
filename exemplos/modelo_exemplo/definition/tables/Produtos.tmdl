@@ -1,0 +1,22 @@
+table Produtos
+	lineageTag: 11111111-0000-0000-0000-000000000003
+
+	column ProdutoId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: ProdutoId
+
+	column Produto
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Produto
+
+	column Categoria
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Categoria
+
+	partition Produtos = m
+		mode: import
+		source = Csv.Document(File.Contents("<CAMINHO_EXEMPLO>\produtos.csv"))

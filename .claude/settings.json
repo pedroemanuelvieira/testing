@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Skill",
+      "Agent",
+      "Bash(python3 -m foundry:*)",
+      "Bash(python -m foundry:*)",
+      "Bash(py -m foundry:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Write(out/**)",
+      "Edit(out/**)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Edit(.claude/**)",
+      "Write(.claude/**)",
+      "Edit(escritorio/**)",
+      "Write(escritorio/**)",
+      "Edit(cerebro/**)",
+      "Write(cerebro/**)",
+      "Edit(foundry/**)",
+      "Write(foundry/**)"
+    ],
+    "deny": [
+      "Bash(python3 -m foundry correr:*)",
+      "Bash(python -m foundry correr:*)",
+      "Bash(py -m foundry correr:*)",
+      "Bash(python3 -m foundry servir:*)",
+      "Bash(python -m foundry servir:*)",
+      "Bash(py -m foundry servir:*)",
+      "Bash(rm:*)",
+      "Bash(del:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(git push --force:*)",
+      "Read(.env)",
+      "Read(**/.env)",
+      "Edit(motor_ml/**)",
+      "Write(motor_ml/**)"
+    ]
+  }
+}

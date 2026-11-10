@@ -1,0 +1,116 @@
+{
+  "versao": "1.0.0",
+  "escritorio": "Neo-Edo Data Foundry",
+  "subtitulo": "Escritório de IA da equipa de BI e ML",
+  "nota": "Registo único dos funcionários. Estados: documentado → configurado → instalado → verificado → producao. Um estado só sobe com evidência datada (ver escritorio/PROMOCAO.md).",
+  "agentes": [
+    {
+      "id": "amaterasu", "numero": "D01", "nome": "Amaterasu", "sigla": "AMA", "tipo": "orquestrador",
+      "papel": "Directora da Fábrica de Dados", "etiqueta": "Comando", "piso": 2, "sala": "Sala de Comando",
+      "faz": "Ponto de entrada: escolhe o funcionário e a skill, coordena, verifica e entrega. Briefing diário de BI.",
+      "perfil_origem": "papel de orquestrador (HIERARQUIA_E_PAPEIS 1.1.0)", "modelo": "o da sessão",
+      "skills": ["briefing-bi", "novo-funcionario", "instalar-rotinas"],
+      "estado": "configurado", "evidencia": "", "dono": "<MANAGER_BI>"
+    },
+    {
+      "id": "tsukuyomi", "numero": "D02", "nome": "Tsukuyomi", "sigla": "TSU", "tipo": "agente",
+      "papel": "Triagem de pedidos", "etiqueta": "Triagem", "piso": 1, "sala": "Portaria",
+      "faz": "Lê os pedidos que chegam, classifica, estima esforço, verifica se já existe relatório e abre a tarefa.",
+      "perfil_origem": "proposta «Triagem de pedidos» do Catálogo Equipa BI (P1)", "modelo": "haiku",
+      "skills": ["triagem-pedidos"],
+      "estado": "configurado", "evidencia": "", "dono": "<ANALISTA_NEGOCIO>"
+    },
+    {
+      "id": "susanoo", "numero": "D03", "nome": "Susanoo", "sigla": "SUS", "tipo": "agente",
+      "papel": "Deriva de dados e anomalias", "etiqueta": "Vigia", "piso": 1, "sala": "Torre de Vigia",
+      "faz": "Compara distribuições, vigia séries de KPIs e avisa quando algo sai do habitual, com diagnóstico.",
+      "perfil_origem": "propostas «Monitor de qualidade» e «Alertas de anomalia» do Catálogo Equipa BI", "modelo": "o da sessão",
+      "skills": ["drift-anomalias"],
+      "estado": "configurado", "evidencia": "", "dono": "<ENGENHEIRO_DADOS>"
+    },
+    {
+      "id": "hachiman", "numero": "D04", "nome": "Hachiman", "sigla": "HAC", "tipo": "agente",
+      "papel": "Analista de BI", "etiqueta": "Analytics", "piso": 1, "sala": "Sala de Análise",
+      "faz": "Consolidação semanal de KPIs, explicação de variações e análises a pedido, sempre com números rastreáveis.",
+      "perfil_origem": "proposta «Briefing semanal automático» do Catálogo Equipa BI (P2)", "modelo": "o da sessão",
+      "skills": ["kpis-semanais", "analise-adhoc"],
+      "estado": "configurado", "evidencia": "", "dono": "<ANALISTA_BI>"
+    },
+    {
+      "id": "benkei", "numero": "D05", "nome": "Benkei", "sigla": "BEN", "tipo": "agente",
+      "papel": "Guardião de qualidade: DAX, modelo e RLS", "etiqueta": "Revisão", "piso": 1, "sala": "Portão de Inspeção",
+      "faz": "Revê medidas e modelo antes de publicar e prepara os testes de segurança ao nível da linha.",
+      "perfil_origem": "propostas «Revisor DAX e modelo» (P1) e «Testes de RLS» (P2) do Catálogo Equipa BI", "modelo": "o da sessão",
+      "skills": ["revisor-dax", "testes-rls"],
+      "estado": "configurado", "evidencia": "", "dono": "<DEVELOPER_POWER_BI>"
+    },
+    {
+      "id": "kenshin", "numero": "900", "nome": "Kenshin", "sigla": "KEN", "tipo": "agente",
+      "papel": "Engenheiro de dados e implementação", "etiqueta": "ETL", "piso": 1, "sala": "Forja de Pipelines",
+      "faz": "Vigia refreshes e pipelines, verifica a qualidade das fontes, escreve SQL e Power Query e implementa blueprints.",
+      "perfil_origem": "900_Arquimedes.md 2.1.0", "modelo": "o da sessão",
+      "skills": ["monitor-refresh", "qualidade-dados", "sql-powerquery"],
+      "estado": "configurado", "evidencia": "", "dono": "<ENGENHEIRO_DADOS>"
+    },
+    {
+      "id": "tetsuo", "numero": "901", "nome": "Tetsuo", "sigla": "TET", "tipo": "agente",
+      "papel": "Cientista de dados, supervisor do esquadrão ML", "etiqueta": "ML", "piso": 2, "sala": "Forja de Modelos",
+      "faz": "Baseline primeiro, avaliação ligada à decisão e supervisão dos dez módulos 910 a 919 do motor bi_ml.",
+      "perfil_origem": "901_Turing.md 2.1.1", "modelo": "o da sessão",
+      "skills": ["ml-qualidade", "ml-ciclo-vida", "ml-churn", "ml-procura", "ml-ruturas", "ml-desvios", "ml-basket", "ml-roi", "ml-abc-xyz", "ml-coortes"],
+      "estado": "configurado", "evidencia": "", "dono": "<CIENTISTA_DADOS>"
+    },
+    {
+      "id": "sakura", "numero": "902", "nome": "Sakura", "sigla": "SAK", "tipo": "agente",
+      "papel": "Gestão de trabalho e documentação", "etiqueta": "Backlog", "piso": 2, "sala": "Arquivo",
+      "faz": "Transforma pedidos em user stories com critérios verificáveis e escreve as notas de cada publicação.",
+      "perfil_origem": "902_Minerva.md 2.1.0", "modelo": "o da sessão",
+      "skills": ["user-stories", "release-notes"],
+      "estado": "configurado", "evidencia": "", "dono": "<ANALISTA_NEGOCIO>"
+    },
+    {
+      "id": "raiden", "numero": "903", "nome": "Raiden", "sigla": "RAI", "tipo": "agente",
+      "papel": "Modelos semânticos e dashboards", "etiqueta": "Power BI", "piso": 2, "sala": "Oficina de Painéis",
+      "faz": "Documenta modelos (dicionário e linhagem) e reconstrói relatórios como dashboards com paridade de métricas.",
+      "perfil_origem": "903_Atlas_BI.md 1.1.0", "modelo": "o da sessão",
+      "skills": ["documentador-modelo", "dashboard"],
+      "estado": "configurado", "evidencia": "", "dono": "<DEVELOPER_POWER_BI>"
+    },
+    {
+      "id": "auditor", "numero": "800", "nome": "Auditor", "sigla": "AUD", "tipo": "agente",
+      "papel": "Auditor independente", "etiqueta": "Auditoria", "piso": 2, "sala": "Sala do Selo",
+      "faz": "Revê entregas e o próprio escritório em contexto limpo: veredito, evidência e plano de prova.",
+      "perfil_origem": "800 Auditor Independente 1.1.0", "modelo": "o da sessão",
+      "skills": ["auditoria"],
+      "estado": "configurado", "evidencia": "", "dono": "<MANAGER_BI>"
+    },
+    {
+      "id": "tomoshibi", "numero": "ASS", "nome": "Tomoshibi", "sigla": "TOM", "tipo": "agente",
+      "papel": "Assistente da rotina diária", "etiqueta": "Rotina", "piso": 1, "sala": "Lanterna da Entrada",
+      "faz": "Morning, fecho do dia e atas de reunião, a partir do estado real do escritório.",
+      "perfil_origem": "pedro-assistente 1.1.0", "modelo": "haiku",
+      "skills": ["morning", "fecho-do-dia", "ata-reuniao"],
+      "estado": "configurado", "evidencia": "", "dono": "<MANAGER_BI>"
+    },
+    {
+      "id": "kioku", "numero": "PRG", "nome": "Kioku", "sigla": "KIO", "tipo": "agente",
+      "papel": "Progresso, memória e higiene", "etiqueta": "Memória", "piso": 2, "sala": "Biblioteca",
+      "faz": "Resumo semanal com horas poupadas, lições propostas para o cérebro partilhado e higiene da fronteira de dados.",
+      "perfil_origem": "pedro-progresso 1.0.0", "modelo": "haiku",
+      "skills": ["resumo-semanal", "higiene"],
+      "estado": "configurado", "evidencia": "", "dono": "<MANAGER_BI>"
+    }
+  ],
+  "projetos_ml": [
+    {"numero": "910", "id": "ml010-check", "skill": "ml-qualidade", "nome": "Qualidade de dados", "cmd": "check", "cadencia": "Dias úteis"},
+    {"numero": "911", "id": "ml010-lifecycle", "skill": "ml-ciclo-vida", "nome": "Ciclo de vida do cliente", "cmd": "lifecycle", "cadencia": "Semanal"},
+    {"numero": "912", "id": "ml010-churn", "skill": "ml-churn", "nome": "Churn", "cmd": "churn", "cadencia": "A pedido"},
+    {"numero": "913", "id": "ml010-forecast", "skill": "ml-procura", "nome": "Previsão de procura", "cmd": "forecast", "cadencia": "A pedido"},
+    {"numero": "914", "id": "ml010-stockout", "skill": "ml-ruturas", "nome": "Perda por rutura", "cmd": "stockout", "cadencia": "A pedido"},
+    {"numero": "915", "id": "ml010-variance", "skill": "ml-desvios", "nome": "Desvios preço-volume-mix", "cmd": "variance", "cadencia": "Mensal"},
+    {"numero": "916", "id": "ml010-basket", "skill": "ml-basket", "nome": "Cesto de compras", "cmd": "basket", "cadencia": "A pedido"},
+    {"numero": "917", "id": "ml010-roi-series", "skill": "ml-roi", "nome": "ROI incremental", "cmd": "roi-series", "cadencia": "A pedido"},
+    {"numero": "918", "id": "ml010-abc-xyz", "skill": "ml-abc-xyz", "nome": "ABC XYZ", "cmd": "abc-xyz", "cadencia": "A pedido"},
+    {"numero": "919", "id": "ml010-cohorts", "skill": "ml-coortes", "nome": "Coortes", "cmd": "cohorts", "cadencia": "A pedido"}
+  ]
+}

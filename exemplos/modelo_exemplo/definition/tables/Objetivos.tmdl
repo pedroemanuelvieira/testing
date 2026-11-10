@@ -1,0 +1,22 @@
+/// Objetivos mensais por região (fictícios). Ainda não está ligada ao resto do modelo.
+table Objetivos
+	lineageTag: 11111111-0000-0000-0000-000000000005
+
+	column Regiao
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Regiao
+
+	column Mes
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: Mes
+
+	column ValorObjetivo
+		dataType: decimal
+		summarizeBy: sum
+		sourceColumn: ValorObjetivo
+
+	partition Objetivos = m
+		mode: import
+		source = Csv.Document(File.Contents("<CAMINHO_EXEMPLO>\objetivos.csv"))

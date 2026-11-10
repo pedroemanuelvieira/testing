@@ -1,0 +1,18 @@
+# O que entra, o que sai e o registo local nunca são versionados (fronteira de dados).
+inbox/**
+!inbox/**/
+!inbox/**/.gitkeep
+out/**
+!out/.gitkeep
+done/**
+!done/.gitkeep
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/

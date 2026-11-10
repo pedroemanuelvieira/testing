@@ -1,0 +1,4 @@
+role Comercial
+	modelPermission: read
+
+	tablePermission Clientes = Clientes[EmailComercial] = USERPRINCIPALNAME()

@@ -1,0 +1,34 @@
+/// Clientes (fictícios). Uma linha por cliente.
+table Clientes
+	lineageTag: 11111111-0000-0000-0000-000000000002
+
+	/// Clientes com pelo menos uma compra no período.
+	measure 'Clientes Ativos' = DISTINCTCOUNT(Vendas[ClienteId])
+		formatString: #,0
+
+	column ClienteId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: ClienteId
+
+	column Cliente
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Cliente
+
+	column Regiao
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Regiao
+
+	/// Endereço de início de sessão do comercial responsável (usado no RLS).
+	column EmailComercial
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: EmailComercial
+
+	partition Clientes = m
+		mode: import
+		source = Csv.Document(File.Contents("<CAMINHO_EXEMPLO>\clientes.csv"))

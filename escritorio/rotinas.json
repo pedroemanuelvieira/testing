@@ -1,0 +1,210 @@
+{
+  "versao": "1.0.0",
+  "nota": "Agendamentos do escritório, na hora local da máquina. cron = minuto hora dia-do-mês mês dia-da-semana (null = só a pedido). requer = ficheiros que têm de existir; sem eles a rotina é ignorada sem gastar uma execução. recuperar_h = se a máquina estava desligada, recupera a execução perdida uma vez dentro desta janela.",
+  "rotinas": [
+    {
+      "id": "morning-audit",
+      "nome": "Morning audit",
+      "agente": "tomoshibi",
+      "cron": "30 8 * * 1-5",
+      "recuperar_h": 3,
+      "ativa": true,
+      "saida": "out/diario/",
+      "prompt": "Usa a skill morning e prepara o arranque do dia do escritório."
+    },
+    {
+      "id": "ml-qualidade",
+      "nome": "910 · Qualidade dos dados de vendas",
+      "agente": "tetsuo",
+      "cron": "47 8 * * 1-5",
+      "ativa": true,
+      "requer": [
+        "inbox/dados/vendas/sales.csv"
+      ],
+      "saida": "out/ml/check/",
+      "prompt": "Usa a skill ml-qualidade sobre inbox/dados/vendas e grava em out/ml/check. Diz que módulos ML podem correr hoje e quais ficam bloqueados pelos dados.",
+      "projeto": "910"
+    },
+    {
+      "id": "monitor-refresh",
+      "nome": "Refreshes e pipelines",
+      "agente": "kenshin",
+      "cron": "8 9 * * 1-5",
+      "ativa": true,
+      "requer": [
+        "inbox/refresh/*.csv"
+      ],
+      "saida": "out/refresh/",
+      "prompt": "Usa a skill monitor-refresh sobre os registos em inbox/refresh. Para cada falha, dá o diagnóstico provável e o próximo passo; abre tarefa para falhas repetidas."
+    },
+    {
+      "id": "briefing-bi",
+      "nome": "Briefing de BI",
+      "agente": "amaterasu",
+      "cron": "26 9 * * 1-5",
+      "recuperar_h": 3,
+      "ativa": true,
+      "saida": "out/briefing/",
+      "prompt": "Usa a skill briefing-bi: junta o que os funcionários produziram desde ontem e entrega o briefing do dia à equipa."
+    },
+    {
+      "id": "triagem",
+      "nome": "Triagem de pedidos",
+      "agente": "tsukuyomi",
+      "cron": "4 9,12,15,17 * * 1-5",
+      "ativa": true,
+      "requer": [
+        "inbox/pedidos/*"
+      ],
+      "saida": "out/triagem/",
+      "prompt": "Usa a skill triagem-pedidos para todos os pedidos em inbox/pedidos."
+    },
+    {
+      "id": "drift-anomalias",
+      "nome": "Deriva e anomalias",
+      "agente": "susanoo",
+      "cron": "15 10 * * 1-5",
+      "ativa": true,
+      "requer": [
+        "inbox/dados/*.csv"
+      ],
+      "saida": "out/vigia/",
+      "prompt": "Usa a skill drift-anomalias sobre as fontes registadas em cerebro/fontes.md que existam em inbox/dados."
+    },
+    {
+      "id": "kpis-semanais",
+      "nome": "Consolidação semanal de KPIs",
+      "agente": "hachiman",
+      "cron": "21 9 * * 1",
+      "recuperar_h": 8,
+      "ativa": true,
+      "requer": [
+        "inbox/dados/*.csv"
+      ],
+      "saida": "out/kpis/",
+      "prompt": "Usa a skill kpis-semanais sobre as fontes de KPIs registadas em cerebro/fontes.md e escreve a leitura da semana."
+    },
+    {
+      "id": "ml-ciclo-vida",
+      "nome": "911 · Ciclo de vida do cliente",
+      "agente": "tetsuo",
+      "cron": "40 9 * * 1",
+      "ativa": true,
+      "requer": [
+        "inbox/dados/vendas/sales.csv"
+      ],
+      "saida": "out/ml/lifecycle/",
+      "prompt": "Usa a skill ml-ciclo-vida sobre inbox/dados/vendas e grava em out/ml/lifecycle. Compara as contagens por fase com a execução anterior, se existir.",
+      "projeto": "911"
+    },
+    {
+      "id": "ml-desvios",
+      "nome": "915 · Desvios preço-volume-mix",
+      "agente": "tetsuo",
+      "cron": "10 10 3 * *",
+      "ativa": true,
+      "requer": [
+        "inbox/dados/vendas/sales.csv"
+      ],
+      "saida": "out/ml/variance/",
+      "prompt": "Usa a skill ml-desvios sobre inbox/dados/vendas e grava em out/ml/variance. Explica os três maiores efeitos.",
+      "projeto": "915"
+    },
+    {
+      "id": "revisao-modelos",
+      "nome": "Revisão de modelos Power BI",
+      "agente": "benkei",
+      "cron": "30 10 * * 3",
+      "ativa": true,
+      "requer": [
+        "inbox/modelos/**/*.tmdl"
+      ],
+      "saida": "out/revisao/",
+      "prompt": "Usa as skills revisor-dax e testes-rls em cada modelo de inbox/modelos. Abre tarefa para cada erro."
+    },
+    {
+      "id": "documentacao-modelos",
+      "nome": "Dicionário dos modelos",
+      "agente": "raiden",
+      "cron": "0 11 * * 3",
+      "ativa": true,
+      "requer": [
+        "inbox/modelos/**/*.tmdl"
+      ],
+      "saida": "out/dicionario/",
+      "prompt": "Usa a skill documentador-modelo em cada modelo de inbox/modelos e diz o que mudou face ao dicionário anterior, se existir."
+    },
+    {
+      "id": "fecho-do-dia",
+      "nome": "Fecho do dia",
+      "agente": "tomoshibi",
+      "cron": "30 17 * * 1-5",
+      "ativa": true,
+      "saida": "out/diario/",
+      "prompt": "Usa a skill fecho-do-dia."
+    },
+    {
+      "id": "resumo-semanal",
+      "nome": "Resumo semanal",
+      "agente": "kioku",
+      "cron": "0 16 * * 5",
+      "recuperar_h": 4,
+      "ativa": true,
+      "saida": "out/semana/",
+      "prompt": "Usa a skill resumo-semanal."
+    },
+    {
+      "id": "higiene",
+      "nome": "Higiene e fronteira de dados",
+      "agente": "kioku",
+      "cron": "45 16 * * 5",
+      "ativa": true,
+      "saida": "out/higiene/",
+      "prompt": "Usa a skill higiene."
+    },
+    {
+      "id": "auditoria-mensal",
+      "nome": "Auditoria mensal do escritório",
+      "agente": "auditor",
+      "cron": "0 14 1 * *",
+      "recuperar_h": 72,
+      "ativa": true,
+      "saida": "out/auditoria/",
+      "prompt": "Usa a skill auditoria sobre o próprio escritório: funcionários sem uso, rotinas que falham, estados sem evidência e riscos."
+    },
+    {
+      "id": "ata-reuniao",
+      "nome": "Ata de reunião",
+      "agente": "tomoshibi",
+      "cron": null,
+      "ativa": true,
+      "requer": [
+        "inbox/reunioes/*"
+      ],
+      "saida": "out/atas/",
+      "prompt": "Usa a skill ata-reuniao para as notas em inbox/reunioes."
+    },
+    {
+      "id": "sprint",
+      "nome": "Preparar o sprint",
+      "agente": "sakura",
+      "cron": null,
+      "ativa": true,
+      "saida": "out/stories/",
+      "prompt": "Usa a skill user-stories: transforma em stories as tarefas pendentes do quadro que vieram da triagem e propõe o âmbito do próximo sprint."
+    },
+    {
+      "id": "ml-previsao",
+      "nome": "913 · Previsão de procura",
+      "agente": "tetsuo",
+      "cron": null,
+      "ativa": true,
+      "requer": [
+        "inbox/dados/vendas/sales.csv"
+      ],
+      "saida": "out/ml/forecast/",
+      "prompt": "Usa a skill ml-procura sobre inbox/dados/vendas, horizonte de 8 semanas, política baseline, e grava em out/ml/forecast.",
+      "projeto": "913"
+    }
+  ]
+}

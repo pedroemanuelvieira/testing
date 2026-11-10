@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo-Edo Data Foundry · 電脳製鋼所</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --steel-dark: #090a0c;
+            --steel-panel: #121418;
+            --steel-panel2: #1a1e24;
+            --steel-border: #2e3540;
+            --steel-line: #455060;
+            
+            --amber: #ff9d00;
+            --amber-glow: rgba(255, 157, 0, 0.3);
+            --amber-bright: #ffc400;
+            
+            --cyan-data: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.25);
+            
+            --hazard-red: #ff3344;
+            --hazard-green: #00e676;
+            --hazard-yellow: #ffd600;
+            
+            --text-main: #f0f4f8;
+            --text-muted: #8a99ad;
+            --text-faint: #566475;
+            
+            --font-title: 'Shippori Mincho', serif;
+            --font-body: 'Zen Kaku Gothic New', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--steel-dark);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(255, 157, 0, 0.08) 0%, transparent 70%),
+                linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        /* Industrial Hazard Border Line */
+        .hazard-strip {
+            height: 4px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--amber),
+                var(--amber) 12px,
+                #121418 12px,
+                #121418 24px
+            );
+            width: 100%;
+        }
+
+        .wrap { max-width: 1600px; margin: 0 auto; width: 100%; padding: 0 16px; }
+
+        /* Typography & Custom Badges */
+        h1, h2, h3, h4, .stenciled { font-family: var(--font-title); }
+        .mono { font-family: var(--font-mono); }
+
+        .badge-foundry {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            background: var(--steel-panel2);
+            border: 1px solid var(--steel-border);
+            color: var(--text-main);
+            text-transform: uppercase;
+        }
+        .badge-foundry.ok { background: rgba(0, 230, 118, 0.12); color: var(--hazard-green); border-color: rgba(0, 230, 118, 0.4); }
+        .badge-foundry.warn { background: rgba(255, 157, 0, 0.15); color: var(--amber-bright); border-color: rgba(255, 157, 0, 0.5); box-shadow: 0 0 8px var(--amber-glow); }
+        .badge-foundry.alert { background: rgba(255, 51, 68, 0.15); color: var(--hazard-red); border-color: rgba(255, 51, 68, 0.5); }
+        .badge-foundry.cyan { background: rgba(0, 240, 255, 0.12); color: var(--cyan-data); border-color: rgba(0, 240, 255, 0.4); }
+
+        .btn-industrial {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--steel-panel2);
+            color: var(--text-main);
+            border: 1px solid var(--steel-border);
+            transition: all 0.2s;
+            user-select: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .btn-industrial:hover {
+            background: var(--steel-line);
+            border-color: var(--amber);
+            color: var(--amber-bright);
+            box-shadow: 0 0 10px var(--amber-glow);
+        }
+        .btn-industrial.primary {
+            background: linear-gradient(135deg, #b86200 0%, #ff9d00 100%);
+            border-color: var(--amber-bright);
+            color: #000;
+            font-weight: 900;
+        }
+        .btn-industrial.primary:hover {
+            background: linear-gradient(135deg, #ff9d00 0%, #ffc400 100%);
+            box-shadow: 0 0 15px rgba(255, 157, 0, 0.6);
+        }
+        .btn-industrial.small { padding: 4px 9px; font-size: 11px; }
+
+        /* -------------------------------------------------------------
+           HEADER LAYOUT (DATA ENGINE METRICS)
+        ------------------------------------------------------------- */
+        header {
+            background: rgba(18, 20, 24, 0.95);
+            border-bottom: 1px solid var(--steel-border);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-seal {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #2b0800 0%, #ff3344 100%);
+            border: 2px solid var(--amber);
+            color: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-title);
+            font-weight: 800;
+            font-size: 20px;
+            box-shadow: 0 0 15px rgba(255, 157, 0, 0.3);
+            position: relative;
+        }
+
+        .brand-titles h1 {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .brand-titles p { font-size: 11px; color: var(--text-muted); }
+
+        /* Industrial Throughput KPIs (#stats preserved) */
+        #stats.kpis {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--steel-dark);
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-border);
+        }
+
+        .kpi {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2px 12px;
+            border-right: 1px solid var(--steel-border);
+        }
+        .kpi:last-child { border-right: none; }
+        .kpi-val { font-size: 15px; font-weight: 900; font-family: var(--font-mono); }
+        .kpi-lbl { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Navigation Segmented Switcher (#seg preserved) */
+        #seg {
+            display: flex;
+            background: var(--steel-dark);
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-border);
+        }
+
+        #seg .seg-btn {
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #seg .seg-btn.active {
+            background: var(--steel-panel2);
+            color: var(--amber-bright);
+            box-shadow: inset 0 0 8px rgba(255, 157, 0, 0.2);
+            border: 1px solid rgba(255, 157, 0, 0.4);
+        }
+
+        /* -------------------------------------------------------------
+           MAIN INDUSTRIAL LAYOUT GRID
+        ------------------------------------------------------------- */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 18px;
+            padding-top: 18px;
+            padding-bottom: 50px;
+            flex: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container { grid-template-columns: 1fr; }
+        }
+
+        .view-panel {
+            background: var(--steel-panel);
+            border: 1px solid var(--steel-border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .view-header {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, var(--steel-panel2) 0%, var(--steel-panel) 100%);
+        }
+
+        .view-title { font-size: 14px; font-weight: 800; color: var(--amber-bright); display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px; }
+
+        /* VIEW 1: EXECUTIVE DATA OPERATIONS ("HOJE") */
+        #executive-today-view {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .alert-banner-foundry {
+            background: linear-gradient(90deg, rgba(255, 51, 68, 0.15) 0%, rgba(18, 20, 24, 0.6) 100%);
+            border: 1px solid var(--hazard-red);
+            border-left: 6px solid var(--hazard-red);
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .section-foundry {
+            background: var(--steel-dark);
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .section-foundry-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--steel-border);
+        }
+
+        /* Routine & Pipeline Tables */
+        .foundry-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .foundry-table th { text-align: left; padding: 8px 10px; font-size: 10px; color: var(--text-faint); text-transform: uppercase; border-bottom: 1px solid var(--steel-border); letter-spacing: 0.5px; }
+        .foundry-table td { padding: 10px; border-bottom: 1px solid rgba(69, 80, 96, 0.3); }
+        .foundry-table tr:hover td { background: var(--steel-panel2); }
+
+        /* ML Models Forge Grid */
+        .forge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+        .forge-card {
+            background: var(--steel-panel);
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .forge-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 3px; height: 100%;
+            background: var(--cyan-data);
+        }
+
+        /* VIEW 2: 3D CYBERNETIC FOUNDRY MAP (#mapview-container) */
+        #mapview-container { display: none; height: 600px; position: relative; background: #040507; }
+        #mapview-container.active { display: flex; flex-direction: column; }
+        #canvas3d-foundry { width: 100%; height: 100%; display: block; }
+
+        .overlay-hud {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: rgba(18, 20, 24, 0.85);
+            border: 1px solid var(--steel-border);
+            border-left: 4px solid var(--amber);
+            padding: 12px 16px;
+            border-radius: 6px;
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #roomBar {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 20, 24, 0.9);
+            border: 1px solid var(--steel-border);
+            padding: 5px;
+            border-radius: 20px;
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        #minimap { position: absolute; top: 14px; right: 14px; width: 140px; height: 90px; background: rgba(9, 10, 12, 0.9); border: 1px solid var(--steel-border); border-radius: 6px; z-index: 10; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-faint); }
+        #zoomctl { position: absolute; top: 14px; left: 240px; display: flex; gap: 4px; z-index: 10; }
+
+        /* VIEW 3 & 4: KANBAN DATA PIPELINE & SCHEMAS */
+        #boardview-container, #bpboard-container, #numview-container { display: none; padding: 18px; }
+        .active-view { display: block !important; }
+
+        .kanban-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        @media (max-width: 900px) { .kanban-grid { grid-template-columns: 1fr; } }
+        
+        .kanban-col {
+            background: var(--steel-dark);
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 350px;
+        }
+
+        .kanban-col-head {
+            font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted);
+            padding-bottom: 8px; border-bottom: 1px solid var(--steel-border);
+            display: flex; justify-content: space-between; letter-spacing: 0.5px;
+        }
+
+        .task {
+            background: var(--steel-panel);
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .task:hover { border-color: var(--amber); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .task.em_curso { border-left: 4px solid var(--amber); }
+        .task.bloqueada { border-left: 4px solid var(--hazard-red); }
+        .task.pendente { border-left: 4px solid var(--text-faint); }
+        .task.concluida { border-left: 4px solid var(--hazard-green); opacity: 0.8; }
+
+        /* -------------------------------------------------------------
+           ASIDE SIDEBAR PANEL (#pane)
+        ------------------------------------------------------------- */
+        .aside-panel {
+            background: var(--steel-panel);
+            border: 1px solid var(--steel-border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 100px);
+            position: sticky;
+            top: 80px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .aside-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--steel-border);
+            background: var(--steel-panel2);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .tab-btn.active {
+            color: var(--amber-bright);
+            border-bottom-color: var(--amber);
+            background: var(--steel-panel);
+        }
+
+        .aside-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: flex; flex-direction: column; gap: 12px; }
+
+        /* Event Log & Live Agent Output Box */
+        .console-output {
+            background: var(--steel-dark);
+            border: 1px solid var(--cyan-data);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--cyan-data);
+            white-space: pre-wrap;
+            max-height: 220px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .ev-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background: var(--steel-dark);
+            border: 1px solid var(--steel-border);
+            font-size: 11px;
+        }
+
+        .ev-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            background: var(--steel-panel2);
+            border: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            flex-shrink: 0;
+            color: var(--amber);
+        }
+
+        /* Agent Directory Cards */
+        .agent-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--steel-dark);
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+        }
+
+        /* -------------------------------------------------------------
+           MODALS & SCRIMS (#dlg, #palScrim)
+        ------------------------------------------------------------- */
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 5, 7, 0.88);
+            backdrop-filter: blur(5px);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .scrim.open { display: flex; }
+
+        .dlg-box {
+            background: var(--steel-panel);
+            border: 1px solid var(--steel-border);
+            border-top: 4px solid var(--amber);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 620px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+            overflow: hidden;
+        }
+
+        .dlg-head {
+            padding: 14px 18px;
+            background: var(--steel-panel2);
+            border-bottom: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .dlg-body { padding: 18px; max-height: 70vh; overflow-y: auto; }
+
+        .pal-input {
+            width: 100%;
+            background: var(--steel-dark);
+            border: 1px solid var(--steel-border);
+            padding: 12px;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            outline: none;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .pal-input:focus { border-color: var(--amber); }
+
+        /* Reorganized Dropdown Menu */
+        .menu-dropdown { position: relative; display: inline-block; }
+        .menu-content {
+            display: none; position: absolute; right: 0; top: 100%; margin-top: 8px;
+            width: 340px; background: var(--steel-panel); border: 1px solid var(--steel-border);
+            border-top: 3px solid var(--amber); border-radius: 8px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9); z-index: 200; padding: 10px;
+        }
+        .menu-dropdown:hover .menu-content, .menu-content.open { display: block; }
+        .menu-group { margin-bottom: 10px; }
+        .menu-group-title { font-size: 10px; font-weight: 800; color: var(--text-faint); text-transform: uppercase; padding: 4px 6px; border-bottom: 1px solid var(--steel-border); margin-bottom: 6px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .menu-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px; font-size: 11px; color: var(--text-main); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+        .menu-item:hover { background: var(--steel-panel2); color: var(--amber-bright); }
+
+        /* -------------------------------------------------------------
+           MOBILE BOTTOM FIXED DOCK (#dock)
+        ------------------------------------------------------------- */
+        #dock {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--steel-panel);
+            border-top: 1px solid var(--steel-border);
+            padding: 8px 14px;
+            z-index: 200;
+            justify-content: space-around;
+        }
+        .dock-item {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            color: var(--text-muted); font-size: 10px; border: none; background: transparent; cursor: pointer;
+        }
+        .dock-item.active { color: var(--amber-bright); }
+
+        @media (max-width: 760px) {
+            #dock { display: flex; }
+            body { padding-bottom: 60px; }
+        }
+    
+
+        /* ---------- acrescentos do escritório ligado ao motor ---------- */
+        #executive-today-view:not(.active-view) { display: none; }
+        #executive-today-view.active-view { display: flex !important; }
+        #zoomctl { left: auto; right: 168px; }
+        .flex { display: flex; } .items-center { align-items: center; } .gap-2 { gap: 8px; } .wrapx { flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700;
+                font-family: var(--font-mono); background: var(--steel-panel2); border: 1px solid var(--steel-border); color: var(--text-muted); white-space: nowrap; }
+        .campo { width: 100%; background: var(--steel-dark); border: 1px solid var(--steel-border); color: var(--text-main); border-radius: 4px;
+                 padding: 8px 10px; font-family: var(--font-body); font-size: 12px; outline: none; }
+        .campo:focus { border-color: var(--amber); }
+        textarea.campo { resize: vertical; min-height: 56px; font-family: var(--font-mono); }
+        label.rot { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .5px; display: block; margin: 8px 0 3px; }
+        .btn-industrial:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+        .btn-industrial:focus-visible, .seg-btn:focus-visible, .tab-btn:focus-visible, .menu-item:focus-visible, .task:focus-visible, .agent-card:focus-visible
+            { outline: 2px solid var(--cyan-data); outline-offset: 2px; }
+        .invocar { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 10px; }
+        @media (max-width: 760px) { .invocar { grid-template-columns: 1fr; } .header-main { gap: 10px; } #stats.kpis { width: 100%; justify-content: space-between; } #seg { overflow-x: auto; max-width: 100%; } }
+        .main-container > *, .header-main > *, .invocar > div, .section-foundry, .kanban-col { min-width: 0; }
+        select.campo { max-width: 100%; text-overflow: ellipsis; }
+        @media (max-width: 760px) {
+            .header-main > * { max-width: 100%; }
+            .header-main > .flex { width: 100%; }
+            #seg { width: 100%; }
+            #seg .seg-btn { white-space: nowrap; }
+            .brand-titles h1 { flex-wrap: wrap; font-size: 16px; }
+            .view-header, .section-foundry-head, .alert-banner-foundry { flex-wrap: wrap; gap: 8px; }
+            header { position: static; }
+            .aside-panel { position: static; max-height: none; }
+            #mapview-container { height: 520px; }
+            #minimap, #zoomctl { display: none; }
+        }
+        .tabela-wrap { overflow-x: auto; }
+        .foundry-table td { vertical-align: top; }
+        .kanban-grid.cols5 { grid-template-columns: repeat(5, 1fr); }
+        @media (max-width: 1100px) { .kanban-grid.cols5 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 900px) { .kanban-grid.cols5 { grid-template-columns: 1fr; } }
+        .agent-card { cursor: pointer; transition: border-color .2s; } .agent-card:hover { border-color: var(--amber); }
+        .vazio { color: var(--text-faint); font-size: 11px; padding: 10px 2px; }
+        .interruptor { width: 34px; height: 18px; border-radius: 9px; border: 1px solid var(--steel-border); background: var(--steel-panel2); position: relative; cursor: pointer; flex-shrink: 0; }
+        .interruptor::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-faint); transition: .2s; }
+        .interruptor.on { border-color: var(--hazard-green); } .interruptor.on::after { left: 18px; background: var(--hazard-green); }
+        #toast .t { background: var(--steel-panel); border: 1px solid var(--steel-border); border-left: 4px solid var(--amber); padding: 10px 14px; border-radius: 6px;
+                    margin-top: 8px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.6); max-width: 340px; }
+        #toast .t.erro { border-left-color: var(--hazard-red); } #toast .t.ok { border-left-color: var(--hazard-green); }
+        #desligado { display: none; background: rgba(255,51,68,.12); border-bottom: 1px solid var(--hazard-red); color: var(--text-main); padding: 8px 16px; font-size: 12px; text-align: center; }
+        #desligado code, .dlg-body code { font-family: var(--font-mono); background: var(--steel-dark); padding: 1px 5px; border-radius: 3px; color: var(--cyan-data); }
+        .dlg-body pre { background: var(--steel-dark); border: 1px solid var(--steel-border); border-radius: 6px; padding: 12px; font-family: var(--font-mono);
+                        font-size: 11px; white-space: pre-wrap; word-break: break-word; color: var(--text-main); max-height: 46vh; overflow: auto; }
+        .dlg-body p { margin-bottom: 8px; } .dlg-body h4 { color: var(--amber-bright); margin: 12px 0 6px; font-size: 13px; }
+        .dlg-body ul { margin: 0 0 8px 18px; }
+        .pal-item { text-align: left; justify-content: flex-start; width: 100%; text-transform: none; font-weight: 500; }
+        .pal-item.sel { border-color: var(--amber); color: var(--amber-bright); }
+        #planta { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .sala { background: rgba(18,20,24,.88); border: 1px solid var(--steel-border); border-top: 3px solid var(--steel-line); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+        .sala.ok { border-top-color: var(--hazard-green); } .sala.falhou { border-top-color: var(--hazard-red); } .sala.avisos { border-top-color: var(--amber); }
+        .sala.ocupado { border-top-color: var(--cyan-data); box-shadow: 0 0 10px var(--cyan-glow); }
+        #mapview-container .overlay-hud { max-width: 260px; }
+        #salas-wrap { position: absolute; left: 14px; right: 14px; bottom: 60px; z-index: 10; }
+        .barra { fill: var(--hazard-green); } .barra.f { fill: var(--hazard-red); }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="hazard-strip"></div>
+    <div id="desligado">Motor desligado. Na pasta do escritório corre <code>python -m foundry servir</code> e recarrega esta página.</div>
+
+    <header>
+        <div class="wrap header-main">
+            <div class="brand-box">
+                <div class="brand-seal">鋼</div>
+                <div class="brand-titles">
+                    <h1><span id="titulo-escritorio">Neo-Edo Data Foundry</span>
+                        <span class="stenciled" style="font-size:12px; color:var(--amber); letter-spacing:2px;">【電脳製鋼所】</span></h1>
+                    <p id="subtitulo-escritorio">Escritório de IA da equipa de BI e ML</p>
+                </div>
+            </div>
+
+            <div id="stats" class="kpis" aria-label="Indicadores do escritório"></div>
+
+            <div class="flex items-center gap-2 wrapx">
+                <button id="btnPalette" class="btn-industrial" title="Paleta de comandos (Ctrl+K)"><span>⚡</span> <span class="mono">Ctrl K</span></button>
+                <div id="btnHealth" class="badge-foundry" role="status">
+                    <span id="liveDot" style="width:7px; height:7px; border-radius:50%; background:var(--text-faint);"></span>
+                    <span id="liveTxt">A ligar…</span>
+                </div>
+                <div id="seg" role="tablist" aria-label="Vistas">
+                    <button class="seg-btn active" data-view="hoje"><span>⚡</span> Data Ops</button>
+                    <button class="seg-btn" data-view="mapa"><span>🏯</span> Fábrica 3D</button>
+                    <button class="seg-btn" data-view="quadro"><span>📋</span> Quadro</button>
+                    <button class="seg-btn" data-view="pontes"><span>🌉</span> Promoção</button>
+                    <button class="seg-btn" data-view="numeros"><span>📊</span> Telemetria</button>
+                </div>
+                <div class="menu-dropdown">
+                    <button id="btnMenu" class="btn-industrial primary" aria-haspopup="true">⋯ Mais</button>
+                    <div id="toolMenu" class="menu-content">
+                        <div class="menu-group">
+                            <div class="menu-group-title">💼 Operações e rotina</div>
+                            <div class="menu-grid">
+                                <button id="btnMorning" class="menu-item" data-rotina="morning-audit">🌅 Morning audit</button>
+                                <button id="btnFecho" class="menu-item" data-rotina="fecho-do-dia">🌆 Fecho do dia</button>
+                                <button id="btnAta" class="menu-item" data-rotina="ata-reuniao">📝 Ata de reunião</button>
+                                <button id="btnAgenda" class="menu-item">📅 Escalonador</button>
+                                <button id="btnWeek" class="menu-item" data-rotina="resumo-semanal">📆 Resumo semanal</button>
+                                <button id="btnAjuda" class="menu-item">❓ Guia rápido</button>
+                            </div>
+                        </div>
+                        <div class="menu-group">
+                            <div class="menu-group-title">👥 Equipa de agentes</div>
+                            <div class="menu-grid">
+                                <button id="btnSide" class="menu-item">📑 Painel lateral</button>
+                                <button id="btnCockpit" class="menu-item">🎛️ Briefing de BI</button>
+                                <button id="btnSprint" class="menu-item" data-rotina="sprint">🏃 Preparar sprint</button>
+                                <button id="btnHig" class="menu-item" data-rotina="higiene">🧹 Higiene</button>
+                            </div>
+                        </div>
+                        <div class="menu-group">
+                            <div class="menu-group-title">📊 Dados e ML</div>
+                            <div class="menu-grid">
+                                <button id="btnKpis" class="menu-item" data-rotina="kpis-semanais">📈 KPIs da semana</button>
+                                <button id="btnFluxo" class="menu-item" data-rotina="monitor-refresh">🔄 Refreshes</button>
+                                <button id="btnIntegr" class="menu-item" data-rotina="ml-qualidade">🛡️ Qualidade (910)</button>
+                                <button id="btnBiblio" class="menu-item" data-rotina="documentacao-modelos">📚 Dicionário</button>
+                                <button id="btnResumos" class="menu-item" data-rotina="drift-anomalias">📋 Deriva e anomalias</button>
+                                <button id="btnNotes" class="menu-item" data-rotina="revisao-modelos">🏷️ Revisão de modelos</button>
+                            </div>
+                        </div>
+                        <div class="menu-group">
+                            <div class="menu-group-title">⚙️ Sistema</div>
+                            <div class="menu-grid">
+                                <button id="btnBackup" class="menu-item">💾 Exportar estado</button>
+                                <button id="btnKeys" class="menu-item">⌨️ Atalhos</button>
+                                <button id="btnRegistos" class="menu-item">📜 Diário</button>
+                                <button id="btnModelos" class="menu-item">📐 Validar configuração</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span id="worldBadge" class="badge-foundry"><span id="lanternBadge">🏮</span> <span id="versao">Edo-Foundry</span></span>
+            </div>
+        </div>
+    </header>
+
+    <div class="wrap main-container">
+        <main class="view-panel">
+            <div class="view-header">
+                <div class="view-title"><span id="current-view-icon">📌</span><span id="current-view-title">Operações de dados · leitura rápida</span></div>
+                <div class="flex items-center gap-2">
+                    <span id="focusPill" class="badge-foundry"></span>
+                    <button id="btnFilter" class="btn-industrial small">🔍 Filtrar</button>
+                </div>
+            </div>
+
+            <!-- VISTA 1 · DATA OPS -->
+            <div id="executive-today-view" class="active-view">
+                <div id="alertas"></div>
+
+                <div class="section-foundry" style="border-color: var(--amber);">
+                    <div class="section-foundry-head">
+                        <h3 style="color:var(--amber-bright);">🤖 Pedir a um funcionário (Claude Code CLI)</h3>
+                        <span class="badge-foundry cyan" id="motor-badge">Motor local</span>
+                    </div>
+                    <div class="invocar">
+                        <div><label class="rot" for="agent-select">Funcionário</label><select id="agent-select" class="campo"></select></div>
+                        <div><label class="rot" for="rotina-select">Rotina</label><select id="rotina-select" class="campo"></select></div>
+                        <div style="display:flex; align-items:flex-end;"><button class="btn-industrial primary" id="btn-run-agent">▶ Executar</button></div>
+                    </div>
+                    <label class="rot" for="pedido-texto">Pedido (opcional com rotina, obrigatório sem ela)</label>
+                    <textarea id="pedido-texto" class="campo" placeholder="Ex.: revê o modelo em inbox/modelos/modelo_exemplo e diz se pode ser publicado"></textarea>
+                    <div id="output-area" class="console-output" style="margin-top:10px;" aria-live="polite">À espera de um pedido. O resultado fica registado na base local (dojo_storage.db) e os ficheiros em out/.</div>
+                </div>
+
+                <div class="section-foundry">
+                    <div class="section-foundry-head">
+                        <h3>⚙️ Rotinas e pipelines do escritório</h3>
+                        <span class="badge-foundry" id="rotinas-badge"></span>
+                    </div>
+                    <div class="tabela-wrap">
+                        <table class="foundry-table">
+                            <thead><tr><th>Funcionário</th><th>Rotina</th><th>Cadência</th><th>Próxima</th><th>Última</th><th>Estado</th><th>Resultado</th><th></th></tr></thead>
+                            <tbody id="rotinas-corpo"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section-foundry">
+                    <div class="section-foundry-head">
+                        <h3>🤖 Esquadrão ML · módulos 910 a 919</h3>
+                        <span class="badge-foundry cyan" id="ml-badge"></span>
+                    </div>
+                    <div class="forge-grid" id="ml-grid"></div>
+                </div>
+            </div>
+
+            <!-- VISTA 2 · FÁBRICA 3D -->
+            <div id="mapview-container">
+                <div class="overlay-hud">
+                    <div class="stenciled" style="font-size:14px; color:var(--amber-bright)">🏯 Fábrica de Dados · 電脳製鋼所</div>
+                    <div class="mono" style="font-size:11px; color:var(--text-muted);" id="hud-texto"></div>
+                </div>
+                <div id="zoomctl">
+                    <button id="zIn" class="btn-industrial small" aria-label="Aproximar">+</button>
+                    <button id="zOut" class="btn-industrial small" aria-label="Afastar">-</button>
+                    <button id="zFit" class="btn-industrial small">Centrar</button>
+                </div>
+                <div id="minimap"></div>
+                <div id="map" style="width:100%; height:100%;"><canvas id="canvas3d-foundry"></canvas></div>
+                <div id="salas-wrap"><div id="planta"></div></div>
+                <div id="roomBar">
+                    <button class="btn-industrial small primary" data-floor="1">一階 Piso 1 · Fusão</button>
+                    <button class="btn-industrial small" data-floor="2">二階 Piso 2 · Torre</button>
+                </div>
+            </div>
+
+            <!-- VISTA 3 · QUADRO -->
+            <div id="boardview-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px; flex-wrap:wrap;">
+                    <span class="badge-foundry cyan">Trabalho da equipa e dos funcionários, por fase</span>
+                    <button class="btn-industrial small primary" data-acao="nova-tarefa">+ Nova tarefa</button>
+                </div>
+                <div id="board" class="kanban-grid"></div>
+            </div>
+
+            <!-- VISTA 4 · PROMOÇÃO -->
+            <div id="bpboard-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px; flex-wrap:wrap;">
+                    <div id="bpbar"><span class="badge-foundry cyan">Estado de cada funcionário · só sobe com evidência</span></div>
+                    <div style="display:flex; gap:6px;">
+                        <button id="bpNew" class="btn-industrial small primary">+ Novo funcionário ou skill</button>
+                        <button id="bpRetTpl" class="btn-industrial small">Checklist de promoção</button>
+                    </div>
+                </div>
+                <div id="bpboard" class="kanban-grid cols5"></div>
+            </div>
+
+            <!-- VISTA 5 · TELEMETRIA -->
+            <div id="numview-container">
+                <div id="numview" class="section-foundry"></div>
+            </div>
+        </main>
+
+        <aside id="pane" class="aside-panel">
+            <div class="aside-tabs" role="tablist">
+                <button class="tab-btn active" data-tab="tarefas">Tarefas</button>
+                <button class="tab-btn" data-tab="eventos">Atividade</button>
+                <button class="tab-btn" data-tab="agentes">Agentes</button>
+                <button class="tab-btn" data-tab="projetos">Projetos ML</button>
+            </div>
+            <div class="aside-content">
+                <div id="tab-pane-tarefas" class="tab-pane active"></div>
+                <div id="tab-pane-eventos" class="tab-pane">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:11px; font-weight:800; color:var(--amber-bright)">Diário da fábrica</span><span class="chip">ao vivo</span>
+                    </div>
+                    <div id="ticker" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+                <div id="tab-pane-agentes" class="tab-pane"></div>
+                <div id="tab-pane-projetos" class="tab-pane"></div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="dock">
+        <button class="dock-item active" data-dock="hoje" data-view="hoje"><span>⚡</span><span>Data Ops</span></button>
+        <button class="dock-item" data-dock="quadro" data-view="quadro"><span>📋</span><span>Quadro</span></button>
+        <button class="dock-item" data-dock="tarefas" data-tabdock="tarefas"><span>✅</span><span>Tarefas</span></button>
+        <button class="dock-item" data-dock="agentes" data-tabdock="agentes"><span>👥</span><span>Agentes</span></button>
+        <button class="dock-item" data-dock="eventos" data-tabdock="eventos"><span>📜</span><span>Diário</span></button>
+    </div>
+
+    <div id="scrim" class="scrim">
+        <div id="dlg" class="dlg-box" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+            <div class="dlg-head">
+                <h3 id="dlg-title" class="stenciled" style="color:var(--amber-bright)"></h3>
+                <button class="btn-industrial small" data-acao="fechar" aria-label="Fechar">✕</button>
+            </div>
+            <div id="dlg-body" class="dlg-body"></div>
+        </div>
+    </div>
+
+    <div id="palScrim" class="scrim">
+        <div class="dlg-box" role="dialog" aria-modal="true" aria-label="Paleta de comandos">
+            <div class="dlg-head">
+                <h3 class="stenciled">⌨️ Paleta de comandos</h3>
+                <button class="btn-industrial small" data-acao="fechar-paleta" aria-label="Fechar">✕</button>
+            </div>
+            <div class="dlg-body">
+                <input type="text" id="palInput" class="pal-input" placeholder="Procurar rotina, funcionário ou vista (ex.: morning, Tetsuo, quadro)…" autocomplete="off">
+                <div id="palLista" style="display:flex; flex-direction:column; gap:4px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" style="position:fixed; bottom:70px; right:20px; z-index:1000;" aria-live="polite"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+    'use strict';
+    // ============================================================ estado e utilitários
+    const S = { e: null, vista: 'hoje', aba: 'tarefas', filtro: '', piso: 1, aSeguir: null, ligado: false };
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const NOME_FASE = { ingestao: '1. Ingestão', transformacao: '2. Transformação', ml: '3. ML e features', producao: '4. Produção' };
+    const NOME_ESTADO = { documentado: '📝 Documentado', configurado: '⚙️ Configurado', instalado: '📦 Instalado', verificado: '✅ Verificado', producao: '🚀 Produção' };
+    const BADGE = { ok: ['ok', '✓ OK'], avisos: ['warn', '⚠ Avisos'], falhou: ['alert', '✕ Falhou'], em_curso: ['cyan', '… Em curso'], ignorada: ['', '– Sem entradas'] };
+    const badge = (estado) => { const b = BADGE[estado] || ['', estado || '—']; return `<span class="badge-foundry ${b[0]}">${esc(b[1])}</span>`; };
+    const agente = (id) => (S.e ? S.e.agentes.find((a) => a.id === id) : null) || { id, nome: id || '—', sigla: (id || '—').slice(0, 3).toUpperCase(), numero: '' };
+    function quando(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso), agora = new Date(), hm = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+        const dias = Math.round((new Date(d.toDateString()) - new Date(agora.toDateString())) / 864e5);
+        if (dias === 0) return 'hoje ' + hm; if (dias === -1) return 'ontem ' + hm; if (dias === 1) return 'amanhã ' + hm;
+        return d.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' ' + hm;
+    }
+    function haQuanto(iso) {
+        const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 6e4));
+        if (m < 1) return 'agora'; if (m < 60) return `há ${m} min`; if (m < 1440) return `há ${Math.round(m / 60)} h`; return `há ${Math.round(m / 1440)} d`;
+    }
+    function toast(msg, tipo) {
+        const t = document.createElement('div'); t.className = 't ' + (tipo || ''); t.textContent = msg; $('toast').appendChild(t);
+        setTimeout(() => t.remove(), 4500);
+    }
+    async function api(caminho, corpo) {
+        const cab = { 'Content-Type': 'application/json' }; const tk = sessionStorage.getItem('foundry_token'); if (tk) cab['X-Foundry-Token'] = tk;
+        const r = await fetch(caminho, corpo ? { method: 'POST', headers: cab, body: JSON.stringify(corpo) } : { headers: cab });
+        if (r.status === 401) {
+            const novo = prompt('Este escritório pede um token de acesso:'); if (novo) { sessionStorage.setItem('foundry_token', novo); return api(caminho, corpo); }
+        }
+        const d = await r.json(); if (!r.ok) throw new Error(d.message || 'erro ' + r.status); return d;
+    }
+    const filtra = (...campos) => !S.filtro || campos.join(' ').toLowerCase().includes(S.filtro);
+
+    // ============================================================ carregamento
+    async function carregar() {
+        try { S.e = await api('/api/estado'); S.ligado = true; } catch (err) { S.ligado = false; }
+        $('desligado').style.display = S.ligado ? 'none' : 'block';
+        desenhar();
+    }
+    function desenhar() {
+        cabecalho(); if (!S.e) return;
+        hoje(); quadro(); promocao(); telemetria(); lateral(); planta(); cena3d();
+    }
+
+    function cabecalho() {
+        const ponto = $('liveDot'), caixa = $('btnHealth'); let cls = '', cor = 'var(--text-faint)', txt = 'Motor desligado';
+        if (S.ligado && S.e) {
+            const m = S.e.motor, t = S.e.telemetria;
+            if (S.e.erros_config.length) { cls = 'alert'; cor = 'var(--hazard-red)'; txt = 'Configuração com erros'; }
+            else if (m.modo === 'simulado') { cls = 'warn'; cor = 'var(--amber)'; txt = 'Modo simulado'; }
+            else if (!m.claude) { cls = 'alert'; cor = 'var(--hazard-red)'; txt = 'Claude Code CLI em falta'; }
+            else if (m.agenda && m.pausada) { cls = 'warn'; cor = 'var(--amber)'; txt = 'Escalonador em pausa'; }
+            else { cls = 'ok'; cor = 'var(--hazard-green)'; txt = m.agenda ? 'Motor e escalonador ligados' : 'Motor ligado · sem escalonador'; }
+            const ativas = S.e.rotinas.filter((r) => r.ativa && r.cron).length, comCron = S.e.rotinas.filter((r) => r.cron).length;
+            const bloq = S.e.tarefas.filter((x) => x.estado === 'bloqueada').length, alertas = t.falhas_hoje + bloq;
+            $('stats').innerHTML = [
+                [t.hoje, 'Execuções hoje', 'var(--cyan-data)'],
+                [t.taxa_sucesso == null ? '—' : String(t.taxa_sucesso).replace('.', ',') + '%', 'Sucesso 7 dias', 'var(--hazard-green)'],
+                [`${ativas}/${comCron}`, 'Rotinas ativas', 'var(--amber-bright)'],
+                [alertas, alertas === 1 ? 'Alerta' : 'Alertas', alertas ? 'var(--hazard-red)' : 'var(--text-muted)'],
+            ].map(([v, l, c]) => `<div class="kpi"><span class="kpi-val" style="color:${c}">${esc(v)}</span><span class="kpi-lbl">${esc(l)}</span></div>`).join('');
+            $('titulo-escritorio').textContent = S.e.escritorio; $('subtitulo-escritorio').textContent = S.e.subtitulo; $('versao').textContent = 'v' + S.e.versao;
+            $('motor-badge').textContent = m.modo === 'simulado' ? 'Simulação · nenhum modelo é invocado' : 'Motor local · subscrição Claude da máquina';
+            const foco = S.e.tarefas.filter((x) => x.foco && x.estado !== 'concluida').length;
+            $('focusPill').className = 'badge-foundry ' + (foco ? 'warn' : ''); $('focusPill').textContent = `⭐ ${foco} em foco` + (m.em_fila ? ` · ${m.em_fila} em fila` : '');
+        }
+        caixa.className = 'badge-foundry ' + cls; ponto.style.background = cor; ponto.style.boxShadow = cls ? `0 0 8px ${cor}` : 'none'; $('liveTxt').textContent = txt;
+    }
+
+    // ============================================================ vista 1 · hoje
+    function hoje() {
+        const e = S.e;
+        // alertas reais: execuções falhadas de hoje e tarefas bloqueadas
+        const dia = e.agora.slice(0, 10);
+        const falhas = e.execucoes.filter((x) => x.estado === 'falhou' && x.inicio.slice(0, 10) === dia);
+        const bloq = e.tarefas.filter((x) => x.estado === 'bloqueada');
+        const linhas = falhas.slice(0, 3).map((x) => `${esc(agente(x.agente).nome)}: ${esc(x.resumo || 'falhou')} (${esc(quando(x.inicio))})`)
+            .concat(bloq.slice(0, 2).map((x) => `Bloqueada: ${esc(x.titulo)}`));
+        $('alertas').innerHTML = linhas.length ? `<div class="alert-banner-foundry"><div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:22px; color:var(--hazard-red)">⚠️</span><div>
+            <strong style="color:var(--hazard-red); font-size:12px; text-transform:uppercase;">Precisa de uma pessoa (${falhas.length + bloq.length})</strong>
+            <p style="font-size:11px; color:var(--text-muted)">${linhas.join(' · ')}</p></div></div>
+            ${falhas.length ? `<button class="btn-industrial small primary" data-exec="${falhas[0].id}">Ver falha</button>` : `<button class="btn-industrial small primary" data-view="quadro">Abrir quadro</button>`}</div>` : '';
+
+        // seletor de funcionário e de rotina (preserva a escolha)
+        const sa = $('agent-select'), atual = sa.value;
+        sa.innerHTML = e.agentes.map((a) => `<option value="${esc(a.id)}">${esc(a.nome)} (${esc(a.numero)}) · ${esc(a.papel)}</option>`).join('');
+        if (atual && e.agentes.some((a) => a.id === atual)) sa.value = atual;
+        rotinasDoAgente();
+
+        // tabela de rotinas
+        const rot = e.rotinas.filter((r) => filtra(r.nome, r.id, agente(r.agente).nome));
+        $('rotinas-badge').textContent = `${e.rotinas.filter((r) => r.cron && r.ativa).length} agendadas · ${e.rotinas.filter((r) => !r.cron).length} a pedido`;
+        $('rotinas-corpo').innerHTML = rot.map((r) => {
+            const u = r.ultima, a = agente(r.agente);
+            const cor = u && u.estado === 'falhou' ? 'var(--hazard-red)' : (u && u.estado === 'avisos' ? 'var(--amber-bright)' : 'var(--text-muted)');
+            return `<tr><td><strong>${esc(a.nome)}</strong> <span class="chip">${esc(a.numero)}</span></td><td>${esc(r.nome)}</td>
+                <td>${esc(r.cadencia)}</td><td>${r.cron && r.ativa ? esc(quando(r.proxima)) : (r.cron ? '<span class="chip">desligada</span>' : '—')}</td>
+                <td>${u ? esc(quando(u.inicio)) : '—'}</td><td>${u ? badge(u.estado) : '<span class="chip">nunca correu</span>'}</td>
+                <td style="color:${cor}; max-width:260px;">${u ? `<a href="#" data-exec="${u.id}" style="color:inherit; text-decoration:none;">${esc(u.resumo || '')}</a>` : ''}</td>
+                <td style="white-space:nowrap;"><button class="btn-industrial small" data-correr="${esc(r.id)}" title="Correr agora" aria-label="Correr ${esc(r.nome)} agora">▶</button></td></tr>`;
+        }).join('') || `<tr><td colspan="8" class="vazio">Nenhuma rotina corresponde ao filtro.</td></tr>`;
+
+        // esquadrão ML
+        $('ml-badge').textContent = `${e.projetos_ml.length} módulos · supervisor Tetsuo`;
+        $('ml-grid').innerHTML = e.projetos_ml.filter((p) => filtra(p.nome, p.numero, p.skill)).map((p) => {
+            const r = e.rotinas.find((x) => x.projeto === p.numero), u = r && r.ultima;
+            return `<div class="forge-card"><div style="display:flex; justify-content:space-between; gap:6px;">
+                <strong style="color:var(--text-main); font-size:12px;">${esc(p.numero)} · ${esc(p.nome)}</strong>${u ? badge(u.estado) : '<span class="chip">sem execuções</span>'}</div>
+                <p style="font-size:11px; color:var(--text-muted)">Cadência: ${esc(r && r.cron ? r.cadencia : p.cadencia)}</p>
+                <p style="font-size:11px; color:var(--text-muted); min-height:16px;">${u ? esc(u.resumo || '') : ''}</p>
+                <div style="display:flex; gap:6px; align-items:center; justify-content:space-between;"><span class="chip">${esc(p.skill)}</span>
+                ${r ? `<button class="btn-industrial small" data-correr="${esc(r.id)}">▶ Correr</button>` : `<button class="btn-industrial small" data-pedir="${esc(p.skill)}">Pedir ao Tetsuo</button>`}</div></div>`;
+        }).join('');
+    }
+    function rotinasDoAgente() {
+        const sr = $('rotina-select'), id = $('agent-select').value, atual = sr.value;
+        const lista = S.e.rotinas.filter((r) => r.agente === id);
+        sr.innerHTML = '<option value="">— pedido livre —</option>' + lista.map((r) => `<option value="${esc(r.id)}">${esc(r.nome)}</option>`).join('');
+        if (lista.some((r) => r.id === atual)) sr.value = atual;
+    }
+
+    // ============================================================ execuções
+    async function executar(agenteId, rotinaId, pedido) {
+        const caixa = $('output-area'), btn = $('btn-run-agent');
+        const a = agente(rotinaId ? (S.e.rotinas.find((r) => r.id === rotinaId) || {}).agente || agenteId : agenteId);
+        caixa.textContent = `[CLAUDE CODE CLI] A chamar ${a.nome}${rotinaId ? ' · ' + rotinaId : ''}…`;
+        btn.disabled = true;
+        try {
+            const r = await api('/api/run-agent', { agent_id: agenteId, rotina: rotinaId || null, pedido: pedido || null });
+            S.aSeguir = r.id; toast(`${a.nome} começou a trabalhar (execução #${r.id})`); seguir(r.id);
+        } catch (err) { caixa.textContent = `[ERRO] ${err.message}`; toast(err.message, 'erro'); btn.disabled = false; }
+    }
+    async function seguir(id) {
+        const caixa = $('output-area');
+        try {
+            const x = await api('/api/execucao?id=' + id);
+            if (S.aSeguir !== id) return;
+            if (x.estado === 'em_curso') {
+                const s = Math.round((Date.now() - new Date(x.inicio)) / 1000);
+                caixa.textContent = `[EM CURSO · execução #${id} · ${s}s] ${agente(x.agente).nome} está a trabalhar…\nPodes continuar a usar o escritório; o resultado aparece aqui.`;
+                setTimeout(() => seguir(id), 2000); return;
+            }
+            const cab = { ok: 'SUCESSO', avisos: 'CONCLUÍDO COM AVISOS', falhou: 'FALHOU', ignorada: 'IGNORADA · SEM ENTRADAS' }[x.estado] || x.estado;
+            caixa.textContent = `[${cab} · execução #${id} · ${x.duracao_s || 0}s]\n${x.resumo || ''}\n\n${x.saida || ''}`;
+            toast(`${agente(x.agente).nome}: ${x.resumo || x.estado}`, x.estado === 'falhou' ? 'erro' : 'ok');
+        } catch (err) { caixa.textContent = `[ERRO] ${err.message}`; }
+        $('btn-run-agent').disabled = false; S.aSeguir = null; carregar();
+    }
+    function confirmarRotina(id) {
+        const r = S.e && S.e.rotinas.find((x) => x.id === id); if (!r) return;
+        const a = agente(r.agente);
+        modal(`Correr «${r.nome}» agora?`, `<p><strong>${esc(a.nome)}</strong> (${esc(a.numero)}) vai executar:</p><pre>${esc(r.prompt)}</pre>
+            <p style="color:var(--text-muted); font-size:11px;">${r.requer ? 'Precisa de: ' + esc(r.requer.join(', ')) + '. Sem entradas, a rotina é ignorada sem gastar uma execução. ' : ''}Cada execução usa a subscrição Claude desta máquina. Resultado em <code>${esc(r.saida || 'out/')}</code>.</p>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;"><button class="btn-industrial" data-acao="fechar">Cancelar</button>
+            <button class="btn-industrial primary" data-confirmar="${esc(r.id)}">▶ Executar</button></div>`);
+    }
+    async function verExecucao(id) {
+        try {
+            const x = await api('/api/execucao?id=' + id), a = agente(x.agente);
+            modal(`Execução #${x.id} · ${a.nome}`, `<p>${badge(x.estado)} <span class="chip">${esc(x.origem)}</span> <span class="chip">${esc(quando(x.inicio))}</span>
+                <span class="chip">${esc(x.duracao_s || 0)} s</span>${x.custo_usd ? ` <span class="chip">${esc(x.custo_usd.toFixed(3))} USD</span>` : ''}</p>
+                <p><strong>${esc(x.rotina || 'Pedido direto')}</strong>${x.pedido ? ': ' + esc(x.pedido) : ''}</p><p>${esc(x.resumo || '')}</p><pre>${esc(x.saida || '(sem saída)')}</pre>`);
+        } catch (err) { toast(err.message, 'erro'); }
+    }
+
+    // ============================================================ vista 3 · quadro
+    function cartaoTarefa(t) {
+        const a = t.agente ? agente(t.agente) : null, bd = { bloqueada: ['alert', 'Bloqueada'], em_curso: ['warn', 'Em curso'], concluida: ['ok', 'Concluída'], pendente: ['', 'Pendente'] }[t.estado] || ['', t.estado];
+        return `<div class="task ${esc(t.estado)}" tabindex="0" role="button" data-tarefa="${t.id}">
+            <strong style="font-size:12px; color:var(--text-main);">${t.foco ? '⭐ ' : ''}${esc(t.titulo)}</strong>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span class="chip">${a ? esc(a.nome) + ' · ' + esc(a.numero) : 'sem dono'}</span>
+            <span class="badge-foundry ${bd[0]}">${esc(bd[1])}${t.prazo ? ' · ' + esc(t.prazo) : ''}</span></div></div>`;
+    }
+    function quadro() {
+        const ts = S.e.tarefas.filter((t) => filtra(t.titulo, t.agente || '', t.estado));
+        $('board').innerHTML = S.e.fases.map((f) => {
+            const l = ts.filter((t) => t.fase === f);
+            return `<div class="kanban-col"><div class="kanban-col-head"><span>${esc(NOME_FASE[f] || f)}</span><span class="chip">${l.length}</span></div>
+                ${l.map(cartaoTarefa).join('') || '<div class="vazio">Sem tarefas nesta fase.</div>'}</div>`;
+        }).join('');
+    }
+    function editarTarefa(id) {
+        const t = id ? S.e.tarefas.find((x) => x.id === id) : { titulo: '', fase: 'ingestao', estado: 'pendente', agente: '', prazo: '', notas: '', foco: 0 };
+        if (!t) return;
+        const op = (lista, sel, nome) => lista.map((v) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(nome ? nome(v) : v)}</option>`).join('');
+        modal(id ? `Tarefa #${id}` : 'Nova tarefa', `
+            <label class="rot" for="t-titulo">Título</label><input id="t-titulo" class="campo" maxlength="140" value="${esc(t.titulo)}">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div><label class="rot" for="t-agente">Funcionário</label><select id="t-agente" class="campo"><option value="">sem dono</option>${S.e.agentes.map((a) => `<option value="${esc(a.id)}" ${a.id === t.agente ? 'selected' : ''}>${esc(a.nome)}</option>`).join('')}</select></div>
+              <div><label class="rot" for="t-fase">Fase</label><select id="t-fase" class="campo">${op(S.e.fases, t.fase, (f) => NOME_FASE[f])}</select></div>
+              ${id ? `<div><label class="rot" for="t-estado">Estado</label><select id="t-estado" class="campo">${op(['pendente', 'em_curso', 'bloqueada', 'concluida', 'arquivada'], t.estado)}</select></div>` : ''}
+              <div><label class="rot" for="t-prazo">Prazo</label><input id="t-prazo" type="date" class="campo" value="${esc(t.prazo || '')}"></div>
+            </div>
+            <label class="rot" for="t-notas">Notas</label><textarea id="t-notas" class="campo">${esc(t.notas || '')}</textarea>
+            ${id ? `<label style="display:flex; gap:8px; align-items:center; margin-top:10px; font-size:12px;"><input type="checkbox" id="t-foco" ${t.foco ? 'checked' : ''}> Em foco (máximo 3)</label>` : ''}
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;"><button class="btn-industrial" data-acao="fechar">Cancelar</button>
+            <button class="btn-industrial primary" data-guardar-tarefa="${id || ''}">Guardar</button></div>`);
+        $('t-titulo').focus();
+    }
+    async function guardarTarefa(id) {
+        const corpo = { titulo: $('t-titulo').value.trim(), agente: $('t-agente').value, fase: $('t-fase').value, prazo: $('t-prazo').value, notas: $('t-notas').value };
+        if (!corpo.titulo) { toast('Falta o título', 'erro'); return; }
+        if (id) Object.assign(corpo, { id: Number(id), estado: $('t-estado').value, foco: $('t-foco').checked ? 1 : 0 }); else corpo.acao = 'criar';
+        try { await api('/api/tarefa', corpo); fecharModal(); toast('Tarefa guardada', 'ok'); carregar(); } catch (err) { toast(err.message, 'erro'); }
+    }
+
+    // ============================================================ vista 4 · promoção
+    function promocao() {
+        $('bpboard').innerHTML = S.e.estados_registo.map((est) => {
+            const l = S.e.agentes.filter((a) => a.estado === est && filtra(a.nome, a.papel));
+            return `<div class="kanban-col"><div class="kanban-col-head"><span>${esc(NOME_ESTADO[est] || est)}</span><span class="chip">${l.length}</span></div>
+                ${l.map((a) => `<div class="task ${est === 'producao' ? 'concluida' : ''}" tabindex="0" role="button" data-agente="${esc(a.id)}">
+                    <strong>${esc(a.numero)} · ${esc(a.nome)}</strong><span style="font-size:11px; color:var(--text-muted)">${esc(a.papel)}</span>
+                    <span class="chip">${a.evidencia ? 'com evidência' : 'sem evidência registada'}</span></div>`).join('') || '<div class="vazio">—</div>'}</div>`;
+        }).join('');
+    }
+
+    // ============================================================ vista 5 · telemetria
+    function telemetria() {
+        const t = S.e.telemetria, v = (x, suf) => (x == null ? '—' : String(x).replace('.', ',') + (suf || ''));
+        const max = Math.max(1, ...t.por_dia.map((d) => d.boas + d.falhas)), L = 44;
+        const barras = t.por_dia.map((d, i) => {
+            const hb = 90 * d.boas / max, hf = 90 * d.falhas / max, x = 8 + i * L;
+            return `<rect class="barra" x="${x}" y="${100 - hb}" width="30" height="${hb}"><title>${esc(d.dia)}: ${d.boas} com sucesso</title></rect>
+                <rect class="barra f" x="${x}" y="${100 - hb - hf}" width="30" height="${hf}"><title>${esc(d.dia)}: ${d.falhas} falhadas</title></rect>
+                <text x="${x + 15}" y="114" text-anchor="middle" font-size="9" fill="#8a99ad">${esc(d.dia.slice(8))}/${esc(d.dia.slice(5, 7))}</text>`;
+        }).join('');
+        const cartao = (rot, val, cor) => `<div class="section-foundry"><span style="font-size:11px; color:var(--text-muted);">${rot}</span><h2 style="color:${cor}; font-size:26px;" class="mono">${esc(val)}</h2></div>`;
+        $('numview').innerHTML = `<h3 style="color:var(--amber-bright); margin-bottom:14px;">📊 Telemetria do escritório · últimos ${t.dias} dias</h3>
+            <div class="forge-grid">${cartao('Taxa de sucesso', v(t.taxa_sucesso, '%'), 'var(--hazard-green)')}${cartao('Execuções', t.execucoes, 'var(--amber-bright)')}
+            ${cartao('Duração média', v(t.duracao_media_s, ' s'), 'var(--cyan-data)')}${cartao('Custo reportado pelo CLI', t.custo_usd ? v(t.custo_usd.toFixed(2), ' USD') : '—', 'var(--text-main)')}</div>
+            <h4 style="margin:18px 0 8px; font-size:12px; color:var(--text-muted);">Execuções por dia <span class="chip" style="color:var(--hazard-green)">■ sucesso</span> <span class="chip" style="color:var(--hazard-red)">■ falha</span></h4>
+            ${t.por_dia.length ? `<svg viewBox="0 0 ${Math.max(320, 16 + t.por_dia.length * L)} 120" style="width:100%; max-width:560px; height:auto;" role="img" aria-label="Execuções por dia">${barras}</svg>` : '<div class="vazio">Ainda sem execuções. Corre uma rotina para começar a medir.</div>'}
+            <h4 style="margin:18px 0 8px; font-size:12px; color:var(--text-muted);">Por funcionário</h4>
+            <div class="tabela-wrap"><table class="foundry-table"><thead><tr><th>Funcionário</th><th>Execuções</th><th>Sucesso</th><th>Falhas</th><th>Duração média</th></tr></thead><tbody>
+            ${t.por_agente.map((a) => `<tr><td><strong>${esc(agente(a.agente).nome)}</strong></td><td>${a.n}</td><td>${a.boas}</td><td style="color:${a.falhas ? 'var(--hazard-red)' : 'inherit'}">${a.falhas}</td><td>${v(a.dur, ' s')}</td></tr>`).join('') || '<tr><td colspan="5" class="vazio">—</td></tr>'}</tbody></table></div>
+            <h4 style="margin:18px 0 8px; font-size:12px; color:var(--text-muted);">Últimas execuções</h4>
+            <div class="tabela-wrap"><table class="foundry-table"><thead><tr><th>#</th><th>Quando</th><th>Funcionário</th><th>Rotina</th><th>Origem</th><th>Estado</th><th>Resumo</th></tr></thead><tbody>
+            ${S.e.execucoes.slice(0, 15).map((x) => `<tr style="cursor:pointer" data-exec="${x.id}"><td>${x.id}</td><td>${esc(quando(x.inicio))}</td><td>${esc(agente(x.agente).nome)}</td><td>${esc(x.rotina || 'pedido direto')}</td><td>${esc(x.origem)}</td><td>${badge(x.estado)}</td><td style="color:var(--text-muted)">${esc(x.resumo || '')}</td></tr>`).join('') || '<tr><td colspan="7" class="vazio">—</td></tr>'}</tbody></table></div>
+            <p class="vazio">Os números são contados a partir das execuções registadas nesta máquina. Execuções ignoradas por falta de entradas não entram na taxa de sucesso.</p>`;
+    }
+
+    // ============================================================ painel lateral
+    function lateral() {
+        const e = S.e, abertas = e.tarefas.filter((t) => t.estado !== 'concluida'), foco = abertas.filter((t) => t.foco);
+        $('tab-pane-tarefas').innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:11px; font-weight:800; color:var(--amber-bright)">Em foco (máx. 3)</span><button class="btn-industrial small" data-acao="nova-tarefa">+ Nova</button></div>
+            ${foco.map(cartaoTarefa).join('') || '<div class="vazio">Nada em foco. Abre uma tarefa e marca «Em foco».</div>'}
+            <span style="font-size:11px; font-weight:800; color:var(--text-muted); margin-top:6px;">Abertas (${abertas.length - foco.length})</span>
+            ${abertas.filter((t) => !t.foco).slice(0, 12).map(cartaoTarefa).join('') || '<div class="vazio">Sem tarefas abertas.</div>'}`;
+        $('ticker').innerHTML = e.eventos.slice(0, 40).map((v) => {
+            const a = agente(v.agente), cor = { erro: 'var(--hazard-red)', aviso: 'var(--amber-bright)', ok: 'var(--hazard-green)' }[v.nivel] || 'var(--text-main)';
+            return `<div class="ev-item"><div class="ev-avatar" style="color:${cor}">${esc(v.agente ? a.sigla : 'SYS')}</div><div style="min-width:0; flex:1;">
+                <div style="display:flex; justify-content:space-between; gap:8px;"><strong style="color:${cor}">${esc(v.titulo)}</strong><span style="color:var(--text-faint); white-space:nowrap;">${esc(haQuanto(v.ts))}</span></div>
+                <p style="color:var(--text-muted)">${esc(v.detalhe || '')}</p></div></div>`;
+        }).join('') || '<div class="vazio">O diário começa com a primeira execução.</div>';
+        $('tab-pane-agentes').innerHTML = `<span style="font-size:11px; font-weight:800; color:var(--amber-bright)">Equipa (${e.agentes.length})</span>
+            <div style="display:flex; flex-direction:column; gap:8px;">${e.agentes.filter((a) => filtra(a.nome, a.papel, a.etiqueta)).map((a) => {
+                const cls = a.ocupado ? 'cyan' : (a.ultima ? (BADGE[a.ultima.estado] || [''])[0] : '');
+                return `<div class="agent-card" tabindex="0" role="button" data-agente="${esc(a.id)}"><div class="ev-avatar">${esc(a.sigla)}</div><div style="flex:1; min-width:0;">
+                    <div style="display:flex; justify-content:space-between; gap:6px;"><strong>${esc(a.nome)} (${esc(a.numero)})</strong><span class="badge-foundry ${cls}">${esc(a.ocupado ? 'a trabalhar' : a.etiqueta)}</span></div>
+                    <p style="font-size:11px; color:var(--text-muted)">${esc(a.papel)}</p></div></div>`;
+            }).join('')}</div>`;
+        $('tab-pane-projetos').innerHTML = `<span style="font-size:11px; font-weight:800; color:var(--amber-bright)">Módulos ML (motor bi_ml)</span>
+            ${e.projetos_ml.map((p) => { const r = e.rotinas.find((x) => x.projeto === p.numero), u = r && r.ultima;
+                return `<div class="section-foundry" style="padding:10px 12px;"><div style="display:flex; justify-content:space-between; gap:6px; font-weight:bold;"><span>${esc(p.numero)} · ${esc(p.nome)}</span>${u ? badge(u.estado) : '<span class="chip">' + esc(p.cadencia) + '</span>'}</div>
+                <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tetsuo · skill ${esc(p.skill)} · ${esc(p.id)}</p></div>`; }).join('')}
+            <p class="vazio">Validado apenas com dados sintéticos. Validar no histórico real antes de decidir.</p>`;
+    }
+    function fichaAgente(id) {
+        const a = S.e.agentes.find((x) => x.id === id); if (!a) return;
+        const rots = S.e.rotinas.filter((r) => r.agente === id);
+        modal(`${a.numero} · ${a.nome}`, `<p><span class="badge-foundry cyan">${esc(a.papel)}</span> <span class="chip">${esc(NOME_ESTADO[a.estado] || a.estado)}</span> <span class="chip">piso ${esc(a.piso)} · ${esc(a.sala)}</span></p>
+            <p>${esc(a.faz)}</p>
+            <h4>Skills</h4><p>${a.skills.map((s) => `<span class="chip">${esc(s)}</span>`).join(' ')}</p>
+            <h4>Rotinas</h4>${rots.length ? '<ul>' + rots.map((r) => `<li>${esc(r.nome)} <span class="chip">${esc(r.cadencia)}</span></li>`).join('') + '</ul>' : '<p class="vazio">Só a pedido.</p>'}
+            <h4>Registo</h4><p style="font-size:11px; color:var(--text-muted)">Perfil de origem: ${esc(a.perfil_origem || '—')}<br>Dono: ${esc(a.dono)} · Modelo: ${esc(a.modelo)}<br>Evidência: ${esc(a.evidencia || 'nenhuma registada')}
+            ${a.ultima ? '<br>Última execução: ' + esc(quando(a.ultima.inicio)) + ' · ' + esc(a.ultima.resumo || a.ultima.estado) : ''}</p>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;"><button class="btn-industrial primary" data-pedir-agente="${esc(a.id)}">Pedir a ${esc(a.nome)}</button></div>`);
+    }
+
+    // ============================================================ vista 2 · fábrica (planta + 3D)
+    function estadoSala(a) { return a.ocupado ? 'ocupado' : (a.ultima ? a.ultima.estado : ''); }
+    function planta() {
+        const doPiso = S.e.agentes.filter((a) => a.piso === S.piso);
+        $('planta').innerHTML = doPiso.map((a) => `<div class="sala ${esc(estadoSala(a))}" tabindex="0" role="button" data-agente="${esc(a.id)}">
+            <div style="font-size:10px; color:var(--text-faint); text-transform:uppercase;">${esc(a.sala)}</div><strong style="font-size:12px;">${esc(a.nome)}</strong>
+            <div style="font-size:10px; color:var(--text-muted)">${esc(a.ocupado ? 'a trabalhar…' : (a.ultima ? quando(a.ultima.inicio) : 'sem execuções'))}</div></div>`).join('');
+        $('hud-texto').innerHTML = `• Piso ${S.piso}: ${doPiso.length} salas<br>• Fila do motor: ${S.e.motor.em_fila} · a trabalhar: ${S.e.agentes.filter((a) => a.ocupado).length}<br>• Verde ok · âmbar avisos · vermelho falhou · ciano em curso`;
+        document.querySelectorAll('#roomBar [data-floor]').forEach((b) => b.classList.toggle('primary', Number(b.dataset.floor) === S.piso));
+        $('minimap').innerHTML = `<svg viewBox="0 0 140 90" width="140" height="90" aria-label="Minimapa">${S.e.agentes.map((a, i) => {
+            const n = S.e.agentes.length, ang = 2 * Math.PI * i / n, cor = { ok: '#00e676', avisos: '#ff9d00', falhou: '#ff3344', ocupado: '#00f0ff' }[estadoSala(a)] || '#455060';
+            return `<circle cx="${70 + 48 * Math.cos(ang)}" cy="${45 + 30 * Math.sin(ang)}" r="${a.piso === S.piso ? 5 : 3}" fill="${cor}" opacity="${a.piso === S.piso ? 1 : .45}"><title>${esc(a.nome)}</title></circle>`;
+        }).join('')}<circle cx="70" cy="45" r="7" fill="none" stroke="#ff9d00" stroke-width="1.5"/></svg>`;
+    }
+    let cena, camara, render3, nucleo, pilares = [], raio = 46;
+    function cena3d() {
+        if (S.vista !== 'mapa' || typeof THREE === 'undefined') return;
+        const cont = $('map'), canvas = $('canvas3d-foundry');
+        if (!render3) {
+            if (!cont.clientWidth) return;
+            try { render3 = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (err) { canvas.style.display = 'none'; return; }
+            cena = new THREE.Scene(); cena.background = new THREE.Color(0x040507); cena.fog = new THREE.FogExp2(0x040507, 0.018);
+            camara = new THREE.PerspectiveCamera(50, cont.clientWidth / cont.clientHeight, 0.1, 1000);
+            render3.setSize(cont.clientWidth, cont.clientHeight);
+            cena.add(new THREE.GridHelper(70, 35, 0xff9d00, 0x1f2630));
+            nucleo = new THREE.Mesh(new THREE.IcosahedronGeometry(4, 2), new THREE.MeshBasicMaterial({ color: 0xff9d00, wireframe: true }));
+            nucleo.position.set(0, 6, 0); cena.add(nucleo);
+            const viga = new THREE.MeshBasicMaterial({ color: 0x455060 });
+            [[-14, 8, -24, 2, 16, 2], [14, 8, -24, 2, 16, 2], [0, 16, -24, 34, 2, 3], [0, 19.5, -24, 40, 1.2, 4]].forEach(([x, y, z, w, h, d]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), viga); m.position.set(x, y, z); cena.add(m); });
+            const parado = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            (function animar() {
+                requestAnimationFrame(animar);
+                if (S.vista !== 'mapa') return;
+                const t = Date.now() / 1000;
+                if (!parado) { nucleo.rotation.y += 0.008; nucleo.rotation.x += 0.004; }
+                pilares.forEach((p) => { if (p.userData.ocupado && !parado) p.scale.y = 1 + 0.15 * Math.sin(t * 5); else p.scale.y = 1; });
+                camara.position.set(raio * 0.55, raio * 0.5 + (S.piso - 1) * 6, raio * 0.8); camara.lookAt(0, 3 + (S.piso - 1) * 8, 0);
+                render3.render(cena, camara);
+            })();
+        }
+        pilares.forEach((p) => { cena.remove(p); p.geometry.dispose(); p.material.dispose(); }); pilares = [];
+        const n = S.e.agentes.length;
+        S.e.agentes.forEach((a, i) => {
+            const ang = 2 * Math.PI * i / n, cor = { ok: 0x00e676, avisos: 0xff9d00, falhou: 0xff3344, ocupado: 0x00f0ff }[estadoSala(a)] || 0x455060, noPiso = a.piso === S.piso;
+            const m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 5, 2.6), new THREE.MeshBasicMaterial({ color: cor, wireframe: !noPiso, transparent: true, opacity: noPiso ? 0.95 : 0.35 }));
+            m.position.set(18 * Math.cos(ang), 2.5 + (a.piso - 1) * 9, 18 * Math.sin(ang)); m.userData = { ocupado: a.ocupado, id: a.id }; cena.add(m); pilares.push(m);
+            const tubo = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 18, 6), new THREE.MeshBasicMaterial({ color: a.ocupado ? 0x00f0ff : 0x2e3540 }));
+            tubo.position.set(9 * Math.cos(ang), 1 + (a.piso - 1) * 9, 9 * Math.sin(ang)); tubo.rotation.z = Math.PI / 2; tubo.rotation.y = -ang; cena.add(tubo); pilares.push(tubo);
+        });
+        if (nucleo) nucleo.material.color.setHex(S.e.motor.em_fila || S.e.agentes.some((a) => a.ocupado) ? 0x00f0ff : 0xff9d00);
+    }
+    window.addEventListener('resize', () => { if (render3 && camara) { const c = $('map'); if (!c.clientWidth) return; camara.aspect = c.clientWidth / c.clientHeight; camara.updateProjectionMatrix(); render3.setSize(c.clientWidth, c.clientHeight); } });
+
+    // ============================================================ navegação, modais, paleta
+    const TITULOS = { hoje: ['📌', 'Operações de dados · leitura rápida'], mapa: ['🏯', 'Fábrica de dados · dois pisos, doze salas'], quadro: ['📋', 'Quadro de trabalho por fase'],
+        pontes: ['🌉', 'Registo e promoção dos funcionários'], numeros: ['📊', 'Telemetria do escritório'] };
+    const CONTENTORES = { hoje: 'executive-today-view', mapa: 'mapview-container', quadro: 'boardview-container', pontes: 'bpboard-container', numeros: 'numview-container' };
+    function mudarVista(v) {
+        if (!CONTENTORES[v]) return; S.vista = v;
+        document.querySelectorAll('#seg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+        document.querySelectorAll('#dock .dock-item').forEach((b) => b.classList.toggle('active', b.dataset.dock === v));
+        Object.entries(CONTENTORES).forEach(([k, id]) => $(id).classList.toggle('active-view', k === v));
+        $('mapview-container').classList.toggle('active', v === 'mapa');
+        $('current-view-icon').textContent = TITULOS[v][0]; $('current-view-title').textContent = TITULOS[v][1];
+        if (S.e) { planta(); cena3d(); }
+    }
+    function mudarAba(t) {
+        S.aba = t; document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
+        document.querySelectorAll('.tab-pane').forEach((p) => p.classList.toggle('active', p.id === 'tab-pane-' + t));
+        document.querySelectorAll('#dock .dock-item').forEach((b) => b.classList.toggle('active', b.dataset.dock === t));
+        if (window.innerWidth <= 1200) $('pane').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    let focoAnterior = null, focoPaleta = null;
+    function modal(titulo, html) { if (!$('scrim').classList.contains('open')) focoAnterior = document.activeElement; $('dlg-title').textContent = titulo; $('dlg-body').innerHTML = html; $('scrim').classList.add('open');
+        const alvo = $('dlg').querySelector('input, select, textarea, .btn-industrial.primary') || $('dlg').querySelector('button'); if (alvo) alvo.focus(); }
+    function fecharModal() { if (!$('scrim').classList.contains('open')) return; $('scrim').classList.remove('open'); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); if (focoAnterior && focoAnterior.focus && document.contains(focoAnterior)) focoAnterior.focus(); }
+    function abrirPaleta() { focoPaleta = document.activeElement; $('palScrim').classList.add('open'); $('palInput').value = ''; paleta(); $('palInput').focus(); }
+    function fecharPaleta() { if (!$('palScrim').classList.contains('open')) return; $('palScrim').classList.remove('open'); $('palInput').blur(); if (focoPaleta && focoPaleta.focus && document.contains(focoPaleta)) focoPaleta.focus(); }
+    function comandos() {
+        const c = Object.entries(TITULOS).map(([v, t]) => ({ txt: `${t[0]} Vista: ${t[1]}`, f: () => mudarVista(v) }));
+        if (S.e) {
+            S.e.rotinas.forEach((r) => c.push({ txt: `▶ Correr: ${r.nome} (${agente(r.agente).nome})`, f: () => confirmarRotina(r.id) }));
+            S.e.agentes.forEach((a) => c.push({ txt: `👤 ${a.nome} (${a.numero}) · ${a.papel}`, f: () => fichaAgente(a.id) }));
+        }
+        c.push({ txt: '＋ Nova tarefa', f: () => editarTarefa(null) }, { txt: '📅 Escalonador', f: escalonador }, { txt: '❓ Guia rápido', f: guia });
+        return c;
+    }
+    let palSel = [];
+    function paleta() {
+        const q = $('palInput').value.trim().toLowerCase(); palSel = comandos().filter((c) => !q || c.txt.toLowerCase().includes(q)).slice(0, 12);
+        $('palLista').innerHTML = palSel.map((c, i) => `<button class="btn-industrial pal-item ${i === 0 ? 'sel' : ''}" data-pal="${i}">${esc(c.txt)}</button>`).join('') || '<div class="vazio">Nada encontrado.</div>';
+    }
+    function escalonador() {
+        const m = S.e.motor;
+        modal('📅 Escalonador de rotinas', `<p>${m.agenda ? 'O escalonador está ' + (m.pausada ? '<strong style="color:var(--amber-bright)">em pausa</strong>' : '<strong style="color:var(--hazard-green)">ligado</strong>') + ': as rotinas ativas disparam à hora, uma de cada vez.' : 'Este motor foi arrancado sem escalonador (<code>--sem-agenda</code>): as rotinas só correm a pedido.'}</p>
+            ${m.agenda ? `<p><button class="btn-industrial small" data-pausa="${m.pausada ? 0 : 1}">${m.pausada ? '▶ Retomar tudo' : '⏸ Pausar tudo'}</button></p>` : ''}
+            <table class="foundry-table"><thead><tr><th>Rotina</th><th>Cadência</th><th>Próxima</th><th>Ativa</th></tr></thead><tbody>
+            ${S.e.rotinas.filter((r) => r.cron).map((r) => `<tr><td>${esc(r.nome)}<br><span class="chip">${esc(agente(r.agente).nome)}</span></td><td>${esc(r.cadencia)}</td><td>${r.ativa ? esc(quando(r.proxima)) : '—'}</td>
+                <td><div class="interruptor ${r.ativa ? 'on' : ''}" role="switch" tabindex="0" aria-checked="${r.ativa}" aria-label="${esc(r.nome)}" data-alternar="${esc(r.id)}" data-ativa="${r.ativa ? 0 : 1}"></div></td></tr>`).join('')}</tbody></table>
+            <p class="vazio">Os interruptores valem só para esta máquina. Para toda a equipa, altera <code>escritorio/rotinas.json</code> e faz commit.</p>`);
+    }
+    function guia() {
+        modal('❓ Guia rápido', `<h4>Três formas de usar o escritório</h4><ul>
+            <li><strong>Conversa:</strong> abre o Claude Code nesta pasta e escreve o que precisas (<code>morning</code>, <code>revê o modelo X</code>, <code>previsão de procura</code>). A Amaterasu escolhe o funcionário.</li>
+            <li><strong>Esta interface:</strong> escolhe um funcionário ou uma rotina e carrega em Executar. O resultado fica em <code>out/</code>.</li>
+            <li><strong>Sozinho:</strong> com o motor ligado, as rotinas do escalonador correm à hora.</li></ul>
+            <h4>Onde pôr o que chega</h4><ul><li><code>inbox/pedidos/</code> pedidos · <code>inbox/dados/</code> CSV · <code>inbox/dados/vendas/</code> extratos para ML</li>
+            <li><code>inbox/modelos/</code> projetos PBIP (TMDL) · <code>inbox/refresh/</code> registos · <code>inbox/reunioes/</code> notas</li></ul>
+            <h4>Experimentar sem dados reais</h4><p><code>python -m foundry demo</code> copia dados fictícios para <code>inbox/</code>.</p>
+            <h4>Regras que não mudam</h4><ul><li>Nada é publicado nem enviado: o trabalho espera em <code>out/</code> por uma pessoa.</li><li>Dados reais só no ambiente profissional aprovado.</li><li>Sem números inventados: se a ferramenta falhar, o funcionário diz o que falta.</li></ul>`);
+    }
+    function atalhos() { modal('⌨️ Atalhos', '<ul><li><code>Ctrl/⌘ + K</code> paleta de comandos</li><li><code>1</code> a <code>5</code> mudar de vista</li><li><code>N</code> nova tarefa</li><li><code>/</code> filtrar</li><li><code>Esc</code> fechar</li></ul>'); }
+    function validar() {
+        const er = S.e.erros_config;
+        modal('📐 Configuração do escritório', er.length ? '<p>Foram encontrados erros:</p><ul>' + er.map((x) => `<li>${esc(x)}</li>`).join('') + '</ul>'
+            : `<p><span class="badge-foundry ok">✓ válida</span></p><p>${S.e.agentes.length} funcionários, ${S.e.rotinas.length} rotinas e ${S.e.projetos_ml.length} módulos ML, todos com ficheiro de agente e skills.</p><p class="vazio">O mesmo que <code>python -m foundry validar</code>.</p>`);
+    }
+    function exportar() {
+        const b = new Blob([JSON.stringify(S.e, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+        a.href = URL.createObjectURL(b); a.download = `foundry_estado_${S.e.agora.slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+        toast('Estado exportado. Não inclui a saída completa das execuções.', 'ok');
+    }
+    function pedirA(id, texto) {
+        fecharModal(); mudarVista('hoje'); $('agent-select').value = id; rotinasDoAgente(); $('rotina-select').value = '';
+        if (texto) $('pedido-texto').value = texto; $('pedido-texto').focus(); $('pedido-texto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // ============================================================ eventos (delegação)
+    document.addEventListener('click', async (ev) => {
+        const t = ev.target.closest('[data-view],[data-tab],[data-tabdock],[data-floor],[data-exec],[data-correr],[data-confirmar],[data-tarefa],[data-agente],[data-acao],[data-guardar-tarefa],[data-pedir],[data-pedir-agente],[data-pal],[data-alternar],[data-pausa],[data-rotina]');
+        if (ev.target === $('scrim')) return fecharModal(); if (ev.target === $('palScrim')) return fecharPaleta();
+        if (!t) return; const d = t.dataset;
+        if (d.exec) { ev.preventDefault(); return verExecucao(d.exec); }
+        if (d.correr) return confirmarRotina(d.correr);
+        if (d.rotina) { $('toolMenu').classList.remove('open'); return confirmarRotina(d.rotina); }
+        if (d.confirmar) { const r = S.e.rotinas.find((x) => x.id === d.confirmar); fecharModal(); mudarVista('hoje'); return executar(r.agente, r.id, null); }
+        if (d.guardarTarefa !== undefined) return guardarTarefa(d.guardarTarefa);
+        if (d.tarefa) return editarTarefa(Number(d.tarefa));
+        if (d.pedirAgente) return pedirA(d.pedirAgente);
+        if (d.pedir) return pedirA('tetsuo', `Usa a skill ${d.pedir} sobre inbox/dados/vendas e grava em out/ml.`);
+        if (d.agente) return fichaAgente(d.agente);
+        if (d.pal) { const c = palSel[Number(d.pal)]; fecharPaleta(); return c && c.f(); }
+        if (d.alternar) { try { await api('/api/rotina', { id: d.alternar, ativa: d.ativa === '1' }); await carregar(); escalonador(); } catch (err) { toast(err.message, 'erro'); } return; }
+        if (d.pausa) { try { await api('/api/agenda', { pausada: d.pausa === '1' }); await carregar(); escalonador(); } catch (err) { toast(err.message, 'erro'); } return; }
+        if (d.acao === 'fechar') return fecharModal(); if (d.acao === 'fechar-paleta') return fecharPaleta(); if (d.acao === 'nova-tarefa') return editarTarefa(null);
+        if (d.floor) { S.piso = Number(d.floor); planta(); return cena3d(); }
+        if (d.tabdock) return mudarAba(d.tabdock);
+        if (d.tab) return mudarAba(d.tab);
+        if (d.view) return mudarVista(d.view);
+    });
+    document.addEventListener('keydown', (ev) => {
+        const emCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+        if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); return abrirPaleta(); }
+        if (ev.key === 'Escape') { fecharModal(); fecharPaleta(); $('toolMenu').classList.remove('open'); return; }
+        if ($('palScrim').classList.contains('open') && ev.key === 'Enter') { ev.preventDefault(); const c = palSel[0]; fecharPaleta(); return c && c.f(); }
+        if ((ev.key === 'Enter' || ev.key === ' ') && document.activeElement.matches('[role="button"],[role="switch"]')) { ev.preventDefault(); return document.activeElement.click(); }
+        if (emCampo || ev.ctrlKey || ev.metaKey || ev.altKey || $('scrim').classList.contains('open')) return;
+        const vistas = ['hoje', 'mapa', 'quadro', 'pontes', 'numeros'];
+        if (/^[1-5]$/.test(ev.key)) return mudarVista(vistas[Number(ev.key) - 1]);
+        if (ev.key.toLowerCase() === 'n') { ev.preventDefault(); return editarTarefa(null); }
+        if (ev.key === '/') { ev.preventDefault(); return $('btnFilter').click(); }
+    });
+    $('palInput').addEventListener('input', paleta);
+    $('agent-select').addEventListener('change', rotinasDoAgente);
+    $('btnPalette').addEventListener('click', abrirPaleta);
+    $('btn-run-agent').addEventListener('click', () => {
+        const rot = $('rotina-select').value, ped = $('pedido-texto').value.trim();
+        if (!rot && !ped) { toast('Escolhe uma rotina ou escreve um pedido', 'erro'); return $('pedido-texto').focus(); }
+        executar($('agent-select').value, rot, ped);
+    });
+    $('btnFilter').addEventListener('click', () => {
+        const q = prompt('Filtrar rotinas, tarefas e funcionários por texto (vazio limpa o filtro):', S.filtro); if (q === null) return;
+        S.filtro = q.trim().toLowerCase(); $('btnFilter').textContent = S.filtro ? `🔍 ${S.filtro} ✕` : '🔍 Filtrar'; desenhar();
+    });
+    $('btnMenu').addEventListener('click', (ev) => { ev.stopPropagation(); $('toolMenu').classList.toggle('open'); });
+    document.addEventListener('click', (ev) => { if (!ev.target.closest('.menu-dropdown')) $('toolMenu').classList.remove('open'); });
+    $('btnAgenda').addEventListener('click', escalonador); $('btnAjuda').addEventListener('click', guia); $('btnKeys').addEventListener('click', atalhos);
+    $('btnModelos').addEventListener('click', validar); $('btnBackup').addEventListener('click', exportar);
+    $('btnRegistos').addEventListener('click', () => mudarAba('eventos'));
+    $('btnSide').addEventListener('click', () => { const p = $('pane'); p.style.display = p.style.display === 'none' ? '' : 'none'; document.querySelector('.main-container').style.gridTemplateColumns = p.style.display === 'none' ? '1fr' : ''; });
+    $('btnCockpit').addEventListener('click', () => confirmarRotina('briefing-bi'));
+    $('bpNew').addEventListener('click', () => pedirA('amaterasu', 'Usa a skill novo-funcionario. Necessidade: '));
+    $('bpRetTpl').addEventListener('click', () => modal('Checklist de promoção', `<p>Um estado só sobe com evidência datada e aprovação de uma pessoa (<code>escritorio/PROMOCAO.md</code>).</p><ul>
+        <li>Sem dados reais em ficheiros versionados</li><li>3 a 5 casos de teste passaram, incluindo um de recusa</li><li>Dono e métrica de valor definidos</li><li>Limites escritos na skill</li>
+        <li>Parecer do Auditor (800)</li><li>Compatível com a política de IA da organização</li><li>Campo <code>evidencia</code> preenchido em <code>escritorio/equipa.json</code></li></ul>`));
+    $('zIn').addEventListener('click', () => { raio = Math.max(24, raio - 6); }); $('zOut').addEventListener('click', () => { raio = Math.min(90, raio + 6); }); $('zFit').addEventListener('click', () => { raio = 46; });
+
+    carregar(); setInterval(() => { if (!document.hidden) carregar(); }, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+/// Linhas de fatura (dados fictícios). Uma linha por produto e documento.
+table Vendas
+	lineageTag: 11111111-0000-0000-0000-000000000001
+
+	/// Receita líquida sem imposto, em EUR.
+	measure 'Receita' = SUM(Vendas[Valor])
+		formatString: #,0.00 €
+		displayFolder: Vendas
+
+	measure 'Custo' = SUM(Vendas[CustoTotal])
+		formatString: #,0.00 €
+		displayFolder: Vendas
+
+	/// Margem em percentagem da receita.
+	measure 'Margem %' = ([Receita] - [Custo]) / [Receita]
+		formatString: 0.0%
+		displayFolder: Vendas
+
+	measure 'Receita Ano Anterior' =
+			CALCULATE(
+				[Receita],
+				SAMEPERIODLASTYEAR(Calendario[Data])
+			)
+		formatString: #,0.00 €
+		displayFolder: Vendas
+
+	measure 'Receita Online' = CALCULATE([Receita], FILTER(Vendas, Vendas[Canal] = "Online"))
+		displayFolder: Vendas
+
+	measure 'Ticket Médio' = IFERROR([Receita] / [N.º Documentos], 0)
+		formatString: #,0.00 €
+
+	measure 'N.º Documentos' = DISTINCTCOUNT(Vendas[DocumentoId])
+		formatString: #,0
+
+	measure 'Receita vs Objetivo' = [Receita] - [Objetivo]
+		formatString: #,0.00 €
+
+	column DocumentoId
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: DocumentoId
+
+	column ClienteId
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: ClienteId
+
+	column ProdutoId
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: ProdutoId
+
+	column Data
+		dataType: dateTime
+		isHidden
+		summarizeBy: none
+		sourceColumn: Data
+
+	column Canal
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Canal
+
+	column Valor
+		dataType: decimal
+		isHidden
+		summarizeBy: sum
+		sourceColumn: Valor
+
+	column CustoTotal
+		dataType: decimal
+		isHidden
+		summarizeBy: sum
+		sourceColumn: CustoTotal
+
+	column MargemLinha = Vendas[Valor] - Vendas[CustoTotal]
+		dataType: decimal
+		summarizeBy: sum
+
+	partition Vendas = m
+		mode: import
+		source =
+				let
+					Origem = Csv.Document(File.Contents("<CAMINHO_EXEMPLO>\vendas.csv"), [Delimiter=";"])
+				in
+					Origem
