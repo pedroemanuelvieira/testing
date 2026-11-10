@@ -100,6 +100,8 @@ def main(argv: list[str]) -> int:
     elif not caminhos:
         caminhos = ["cerebro", "escritorio", ".claude", "README.md", "CLAUDE.md"]
     r = verificar(caminhos)
+    if a.staged and not r["achados"]:
+        return 0   # gancho pre-commit: silencioso quando está tudo bem
     comum.emitir(r, a.out, "fronteira")
     if r["achados"] and a.staged:
         print("\nCommit bloqueado pela fronteira de dados. Substitui os valores por placeholders (ex.: <CLIENTE_EXEMPLO>) "
