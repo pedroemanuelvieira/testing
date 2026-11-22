@@ -1,0 +1,985 @@
+# Glossário — Fundamentos, Negócio, Dados & Power BI, Estatística
+terms:
+  # ================================================================ FUNDAMENTOS
+  - id: machine_learning
+    term: Machine Learning (Aprendizagem Automática)
+    en: Machine Learning
+    category: fundamentos
+    level: básico
+    short: Técnicas que aprendem padrões a partir de dados históricos para prever ou decidir sobre casos novos.
+    definition: >-
+      Em vez de programar regras manualmente ("se o cliente tem 3 reclamações
+      então risco alto"), damos ao algoritmo exemplos históricos e ele aprende
+      as regras/padrões que melhor explicam o resultado. Em BI, o ML permite
+      passar de relatórios descritivos ("o que aconteceu") para preditivos
+      ("o que vai acontecer") e prescritivos ("o que devemos fazer").
+    example: Aprender, com 2 anos de histórico de clientes, quais os padrões que antecedem um cancelamento.
+    related: [aprendizagem_supervisionada, aprendizagem_nao_supervisionada, modelo]
+    steps: [enquadramento]
+
+  - id: analitica_preditiva
+    term: Analítica descritiva, preditiva e prescritiva
+    en: Descriptive / Predictive / Prescriptive analytics
+    category: fundamentos
+    level: básico
+    short: Os três níveis de maturidade analítica — o que aconteceu, o que vai acontecer e o que fazer.
+    definition: >-
+      Descritiva: relatórios e dashboards (o domínio tradicional do Power BI).
+      Preditiva: modelos que estimam probabilidades ou valores futuros.
+      Prescritiva: recomendações de ação que otimizam um objetivo (ex.: a quem
+      enviar a campanha para maximizar o ROI). Esta plataforma ajuda a equipa
+      de BI a dar o salto da descritiva para a preditiva e prescritiva.
+    example: "Descritiva: churn do mês foi 2%. Preditiva: estes 300 clientes têm >60% de probabilidade de sair. Prescritiva: contactar os 120 com maior valor em risco."
+    related: [machine_learning, matriz_custo_beneficio]
+    steps: [enquadramento]
+
+  - id: aprendizagem_supervisionada
+    term: Aprendizagem supervisionada
+    en: Supervised learning
+    category: fundamentos
+    level: básico
+    short: Aprender a partir de exemplos em que o resultado (alvo) é conhecido.
+    definition: >-
+      Cada registo histórico tem as variáveis de entrada (features) e o
+      resultado observado (target). O modelo aprende a mapear entradas em
+      resultados. Inclui classificação (alvo categórico) e regressão (alvo
+      numérico). A previsão de séries temporais é um caso particular.
+    example: "Faturas passadas com a informação \"pagou com atraso: sim/não\"."
+    related: [classificacao, regressao, target, feature]
+    steps: [enquadramento]
+
+  - id: aprendizagem_nao_supervisionada
+    term: Aprendizagem não supervisionada
+    en: Unsupervised learning
+    category: fundamentos
+    level: básico
+    short: Descobrir estrutura nos dados sem um resultado conhecido.
+    definition: >-
+      Não existe alvo. Os algoritmos procuram grupos (clustering), observações
+      raras (deteção de anomalias) ou co-ocorrências (regras de associação). A
+      validação depende muito da interpretação de negócio.
+    example: Agrupar clientes por comportamento de compra sem saber à partida que segmentos existem.
+    related: [clustering, anomalia, regra_associacao]
+    steps: [enquadramento]
+
+  - id: classificacao
+    term: Classificação
+    en: Classification
+    category: fundamentos
+    level: básico
+    short: "Problema supervisionado em que o alvo é uma categoria (ex.: sim/não, A/B/C)."
+    definition: >-
+      O modelo estima a probabilidade de cada classe. Na classificação binária
+      (duas classes) usa-se um limiar para transformar a probabilidade em
+      decisão. Na multiclasse escolhe-se a classe mais provável.
+    example: Prever se um lead vai converter (sim/não) ou a categoria NPS (promotor/passivo/detrator).
+    related: [probabilidade, limiar_decisao, matriz_confusao, regressao]
+    steps: [enquadramento, avaliacao]
+
+  - id: regressao
+    term: Regressão
+    en: Regression
+    category: fundamentos
+    level: básico
+    short: Problema supervisionado em que o alvo é um número contínuo.
+    definition: >-
+      O modelo prevê um valor numérico (euros, dias, unidades). Avalia-se pela
+      dimensão dos erros (MAE, RMSE) e pela variância explicada (R²). Não
+      confundir com "regressão logística", que é um modelo de classificação.
+    example: Prever o valor que um cliente vai gastar nos próximos 12 meses.
+    related: [mae, rmse, r2, residuo, regressao_linear]
+    steps: [enquadramento, avaliacao]
+
+  - id: modelo
+    term: Modelo
+    en: Model
+    category: fundamentos
+    level: básico
+    short: O resultado do treino — uma função que transforma features numa previsão.
+    definition: >-
+      Um modelo é o "conhecimento" extraído dos dados por um algoritmo. Na
+      plataforma, cada modelo é guardado como um pipeline completo
+      (preparação de dados + algoritmo) com versão, métricas e metadados.
+    example: Um LightGBM treinado sobre a tabela Clientes que devolve a probabilidade de churn.
+    related: [algoritmo, pipeline, registo_modelos]
+    steps: [treino]
+
+  - id: algoritmo
+    term: Algoritmo
+    en: Algorithm
+    category: fundamentos
+    level: básico
+    short: "O método matemático usado para aprender (ex.: Random Forest, Regressão Logística)."
+    definition: >-
+      O algoritmo é a "receita"; o modelo é o "bolo" depois de aplicada aos
+      dados. O mesmo algoritmo treinado em dados diferentes gera modelos
+      diferentes.
+    example: Random Forest é o algoritmo; "RF churn v3" é o modelo.
+    related: [modelo, hiperparametro]
+    steps: [modelos]
+
+  - id: feature
+    term: Feature (variável explicativa)
+    en: Feature / predictor
+    category: fundamentos
+    level: básico
+    short: Uma coluna de entrada usada pelo modelo para fazer a previsão.
+    definition: >-
+      Também chamada variável independente ou preditor. A qualidade das
+      features é, em regra, mais determinante que a escolha do algoritmo. Só
+      podem ser usadas features disponíveis no momento da previsão.
+    example: Antiguidade, nº de reclamações e variação de consumo de um cliente.
+    related: [target, feature_engineering, data_leakage]
+    steps: [features]
+
+  - id: target
+    term: Target (alvo / variável dependente)
+    en: Target / label
+    category: fundamentos
+    level: básico
+    short: A coluna que queremos prever.
+    definition: >-
+      Deve ser definida com precisão de negócio: o quê, em que horizonte e a
+      partir de que data. Uma definição vaga ("cliente insatisfeito") gera um
+      modelo inútil. Em classificação chama-se também "label" ou "classe".
+    example: churn = 1 se o cliente cancelou nos 90 dias após a data de corte.
+    related: [feature, data_corte, horizonte_previsao]
+    steps: [enquadramento]
+
+  - id: observacao
+    term: Observação (registo, linha)
+    en: Observation / sample / row
+    category: fundamentos
+    level: básico
+    short: Uma linha da tabela de treino — a unidade sobre a qual se faz a previsão.
+    definition: >-
+      Definir a unidade de análise é crítico: cliente? cliente × mês? fatura?
+      Determina a granularidade da tabela que se extrai do Power BI.
+    example: Na previsão de atrasos de faturas, cada observação é uma fatura.
+    related: [granularidade, dataset]
+    steps: [enquadramento, dados]
+
+  - id: dataset
+    term: Dataset (conjunto de dados)
+    en: Dataset
+    category: fundamentos
+    level: básico
+    short: A tabela de observações usada para treinar e avaliar o modelo.
+    definition: >-
+      No Power BI Service, "dataset" é também o antigo nome do modelo
+      semântico. Na plataforma, o dataset de um projeto é o snapshot extraído
+      do Power BI (ou carregado de ficheiro) usado no treino.
+    example: Snapshot de 6.000 clientes com 28 colunas extraído do modelo semântico "CRM e Clientes".
+    related: [modelo_semantico, snapshot]
+    steps: [dados]
+
+  - id: treino
+    term: Treino (ajuste do modelo)
+    en: Training / fitting
+    category: fundamentos
+    level: básico
+    short: Processo em que o algoritmo aprende os parâmetros a partir dos dados.
+    definition: >-
+      Durante o treino o algoritmo ajusta os seus parâmetros internos para
+      minimizar o erro nos dados de treino. O risco é "decorar" esses dados
+      (overfitting); por isso avaliamos sempre em dados não vistos.
+    example: Treinar um LightGBM com 80% dos clientes e avaliar nos restantes 20%.
+    related: [overfitting, conjunto_teste, validacao_cruzada]
+    steps: [treino]
+
+  - id: inferencia
+    term: Inferência (scoring)
+    en: Inference / scoring / prediction
+    category: fundamentos
+    level: básico
+    short: Usar um modelo treinado para prever casos novos.
+    definition: >-
+      Também chamado scoring. Pode ser em lote (batch — ex.: todos os clientes
+      uma vez por mês, gravado numa tabela do Power BI) ou online (via API,
+      no momento de uma transação).
+    example: Calcular hoje a probabilidade de churn de todos os clientes ativos.
+    related: [scoring_batch, scoring_online]
+    steps: [implementacao]
+
+  - id: overfitting
+    term: Overfitting (sobreajuste)
+    en: Overfitting
+    category: fundamentos
+    level: básico
+    short: O modelo decora o treino (incluindo ruído) e falha em dados novos.
+    definition: >-
+      Sinal típico: desempenho muito bom no treino e bastante pior na
+      validação/teste. Causas: modelo demasiado complexo, poucos dados,
+      variáveis com leakage. Remédios: regularização, limitar profundidade,
+      mais dados, early stopping, menos variáveis.
+    example: AUC de 0,99 no treino e 0,71 no teste.
+    pitfalls: [Avaliar só no treino, Afinar hiperparâmetros vezes sem conta no mesmo conjunto de teste]
+    related: [underfitting, bias_variancia, regularizacao, early_stopping]
+    steps: [parametros, treino, avaliacao]
+
+  - id: underfitting
+    term: Underfitting (subajuste)
+    en: Underfitting
+    category: fundamentos
+    level: básico
+    short: O modelo é demasiado simples para captar os padrões existentes.
+    definition: >-
+      Sinal típico: desempenho fraco tanto no treino como no teste. Remédios:
+      modelo mais flexível, melhores features, menos regularização, mais
+      iterações.
+    example: Uma regressão linear para relações claramente não lineares (efeito de saturação do desconto).
+    related: [overfitting, bias_variancia]
+    steps: [parametros, avaliacao]
+
+  - id: bias_variancia
+    term: Compromisso enviesamento–variância
+    en: Bias–variance trade-off
+    category: fundamentos
+    level: intermédio
+    short: Equilíbrio entre modelos demasiado simples (enviesados) e demasiado sensíveis aos dados (variância alta).
+    definition: >-
+      Enviesamento (bias) é o erro por o modelo ser demasiado simples;
+      variância é o erro por ser demasiado sensível à amostra de treino. Os
+      hiperparâmetros movem o modelo neste eixo: aumentar complexidade reduz
+      bias e aumenta variância. O objetivo é o ponto de menor erro em dados
+      novos.
+    example: Uma árvore com profundidade 2 tem bias alto; com profundidade 30 tem variância alta.
+    related: [overfitting, underfitting, hiperparametro]
+    steps: [parametros]
+
+  - id: generalizacao
+    term: Generalização
+    en: Generalization
+    category: fundamentos
+    level: básico
+    short: Capacidade do modelo funcionar bem em dados que nunca viu.
+    definition: >-
+      É o único desempenho que interessa ao negócio. Estima-se com validação
+      cruzada e com um conjunto de teste guardado até ao fim.
+    example: Um modelo de churn que mantém AUC de 0,80 em clientes de um mês posterior ao treino.
+    related: [overfitting, conjunto_teste, validacao_cruzada]
+    steps: [avaliacao]
+
+  - id: baseline
+    term: Baseline (modelo de referência)
+    en: Baseline
+    category: fundamentos
+    level: básico
+    short: Uma solução simples contra a qual se compara o modelo.
+    definition: >-
+      Sem baseline não se sabe se o modelo acrescenta valor. Exemplos: prever
+      sempre a classe maioritária, a média, o valor da semana passada (naive
+      sazonal) ou a regra de negócio atual. A plataforma calcula sempre uma
+      baseline automaticamente.
+    example: "Regra atual: contactar clientes com >2 reclamações. O modelo deve captar mais churners com o mesmo nº de contactos."
+    related: [naive_sazonal, lift]
+    steps: [enquadramento, avaliacao]
+
+  - id: hiperparametro
+    term: Hiperparâmetro
+    en: Hyperparameter
+    category: fundamentos
+    level: básico
+    short: "Configuração do algoritmo definida antes do treino (ex.: nº de árvores, profundidade)."
+    definition: >-
+      Ao contrário dos parâmetros (aprendidos), os hiperparâmetros são
+      escolhidos por nós e controlam a complexidade e o processo de
+      aprendizagem. O Agente Conselheiro recomenda valores por modelo, caso de
+      uso e perfil dos dados, e explica o efeito de cada um.
+    example: learning_rate = 0,05 e num_leaves = 31 num LightGBM.
+    related: [parametro, tuning, bias_variancia]
+    steps: [parametros]
+
+  - id: parametro
+    term: Parâmetro (do modelo)
+    en: Model parameter
+    category: fundamentos
+    level: intermédio
+    short: "Valor aprendido pelo modelo durante o treino (ex.: coeficientes, divisões das árvores)."
+    definition: >-
+      Os parâmetros resultam do treino; os hiperparâmetros controlam como esse
+      treino acontece.
+    example: O coeficiente +0,8 da variável "nº de reclamações" numa regressão logística.
+    related: [hiperparametro]
+    steps: [treino]
+
+  - id: probabilidade
+    term: Probabilidade prevista (score)
+    en: Predicted probability / score
+    category: fundamentos
+    level: básico
+    short: Valor entre 0 e 1 que o modelo atribui à classe positiva.
+    definition: >-
+      Uma probabilidade de 0,30 significa que, entre muitos casos com este
+      score, cerca de 30% devem ser positivos — se o modelo estiver calibrado.
+      Muitos modelos produzem scores que ordenam bem mas não são
+      probabilidades exatas.
+    example: Cliente com probabilidade de churn 0,72 → muito acima da média de 0,18.
+    related: [calibracao, limiar_decisao]
+    steps: [avaliacao, implementacao]
+
+  - id: pipeline
+    term: Pipeline
+    en: Pipeline
+    category: fundamentos
+    level: intermédio
+    short: Sequência encadeada de passos (preparação + modelo) tratada como um só objeto.
+    definition: >-
+      Garante que exatamente as mesmas transformações aplicadas no treino são
+      aplicadas na previsão, evitando erros e leakage. Na plataforma, cada
+      modelo guardado inclui feature engineering, imputação, codificação,
+      normalização e algoritmo.
+    example: "Criar features de data → imputar mediana → one-hot → LightGBM."
+    related: [data_leakage, feature_engineering]
+    steps: [treino, implementacao]
+
+  # ================================================================ NEGÓCIO
+  - id: matriz_custo_beneficio
+    term: Matriz de custo-benefício
+    en: Cost-benefit matrix
+    category: negocio
+    level: intermédio
+    short: Atribui um valor em euros a cada tipo de acerto e erro do modelo.
+    definition: >-
+      Liga a matriz de confusão ao negócio, sempre face à alternativa "não
+      agir": quanto vale agir sobre um verdadeiro positivo (benefício líquido
+      do custo da ação, ex.: margem retida), quanto custa agir sobre um falso
+      positivo (ex.: oferta desperdiçada) e quanto vale cada falso negativo
+      (valor que fica por captar). O Agente de Avaliação escolhe o limiar que
+      maximiza o valor líquido — limiar ótimo ≈ custo_FP / (custo_FP + benefício).
+    example: "FP = 15€ (oferta desperdiçada), VP = 120€ (margem retida líquida), FN = 220€ (margem perdida por não detetar)."
+    formula: "Valor líquido = VP × benefício − FP × custo_FP; valor por captar = FN × custo_FN"
+    related: [matriz_confusao, limiar_decisao, roi]
+    steps: [enquadramento, avaliacao]
+
+  - id: roi
+    term: ROI (retorno do investimento)
+    en: Return on investment
+    category: negocio
+    level: básico
+    short: Ganho líquido de uma ação dividido pelo seu custo.
+    definition: >-
+      Para um modelo, o ROI compara o valor gerado pelas decisões que o modelo
+      suporta com o custo de as executar (e de construir o modelo).
+    formula: ROI = (Ganho − Custo) / Custo
+    example: Campanha de retenção custou 5.000€ e salvou 20.000€ de margem → ROI = 300%.
+    related: [matriz_custo_beneficio, lift]
+    steps: [avaliacao]
+
+  - id: kpi
+    term: KPI (indicador-chave de desempenho)
+    en: Key Performance Indicator
+    category: negocio
+    level: básico
+    short: Métrica de negócio que o projeto pretende melhorar.
+    definition: >-
+      Todo o projeto de ML deve declarar à partida que KPI vai mover e como se
+      mede (ex.: taxa de churn, DSO, WAPE da previsão). As métricas técnicas
+      (AUC, MAE) são meios, não fins.
+    example: Reduzir a taxa de churn mensal de 2,0% para 1,7%.
+    related: [roi, matriz_custo_beneficio]
+    steps: [enquadramento]
+
+  - id: churn
+    term: Churn (taxa de abandono)
+    en: Churn
+    category: negocio
+    level: básico
+    short: Saída/cancelamento de clientes num período.
+    definition: >-
+      Pode ser contratual (cancelamento explícito) ou não contratual (cliente
+      deixa de comprar — exige definir um período de inatividade). A definição
+      operacional do churn é a decisão mais importante do projeto.
+    formula: Taxa de churn = clientes que saíram no período / clientes no início do período
+    example: Cliente sem compras há 120 dias é considerado churn (não contratual).
+    related: [target, campanha_retencao, clv]
+    steps: [enquadramento]
+
+  - id: campanha_retencao
+    term: Campanha de retenção
+    en: Retention campaign
+    category: negocio
+    level: básico
+    short: Ação dirigida a clientes em risco para evitar a sua saída.
+    definition: >-
+      O modelo de churn indica quem contactar; a eficácia da campanha deve ser
+      medida com um grupo de controlo. Nem todos os clientes em risco são
+      "salváveis" — modelos de uplift estimam quem responde à ação.
+    example: Oferecer 1 mês grátis aos 500 clientes com maior risco e valor.
+    related: [churn, uplift, grupo_controlo]
+    steps: [implementacao]
+
+  - id: clv
+    term: CLV (valor do tempo de vida do cliente)
+    en: Customer Lifetime Value
+    category: negocio
+    level: intermédio
+    short: Valor que um cliente deverá gerar durante a relação com a empresa.
+    definition: >-
+      Pode ser histórico (o que já gerou) ou preditivo (o que vai gerar).
+      Combinado com o risco de churn permite priorizar onde investir.
+    example: Cliente com CLV previsto de 1.200€ e risco de churn de 60% → 720€ em risco.
+    related: [churn, regressao, rfm]
+    steps: [enquadramento]
+
+  - id: propensao
+    term: Modelo de propensão
+    en: Propensity model
+    category: negocio
+    level: básico
+    short: Estima a probabilidade de um cliente realizar uma ação (comprar, responder, aderir).
+    definition: >-
+      Classificação binária orientada a marketing/vendas. Usa-se para ordenar
+      a base e contactar quem tem maior probabilidade, medindo o resultado
+      pelo lift face a uma seleção aleatória.
+    example: Propensão de aderir ao produto B nos próximos 6 meses.
+    related: [lift, curva_ganhos, uplift]
+    steps: [enquadramento]
+
+  - id: uplift
+    term: Uplift (efeito incremental)
+    en: Uplift modelling
+    category: negocio
+    level: avançado
+    short: Mede o efeito causal de uma ação — quem muda de comportamento por causa dela.
+    definition: >-
+      Um modelo de propensão diz quem vai comprar; um modelo de uplift diz
+      quem vai comprar por causa da campanha. Requer dados de tratamento vs
+      controlo aleatório. Evita gastar ofertas em clientes que comprariam de
+      qualquer forma ("sure things") ou que reagem mal ao contacto.
+    example: "Grupo contactado comprou 8%, grupo de controlo 6% → uplift de 2 p.p."
+    related: [grupo_controlo, propensao, causalidade]
+    steps: [enquadramento, avaliacao]
+
+  - id: grupo_controlo
+    term: Grupo de controlo
+    en: Control group
+    category: negocio
+    level: básico
+    short: Amostra aleatória que não recebe a ação, para medir o seu efeito real.
+    definition: >-
+      Sem grupo de controlo não se distingue o efeito da ação do que teria
+      acontecido de qualquer forma. É a base de testes A/B e da medição de
+      impacto de modelos em produção.
+    example: 10% dos clientes de alto risco ficam fora da campanha para medir o churn evitado.
+    related: [teste_ab, uplift]
+    steps: [implementacao, monitorizacao]
+
+  - id: teste_ab
+    term: Teste A/B
+    en: A/B test
+    category: negocio
+    level: intermédio
+    short: "Experiência aleatorizada que compara duas variantes (ex.: com e sem modelo)."
+    definition: >-
+      Divide aleatoriamente a população em grupos que recebem tratamentos
+      diferentes e compara o KPI. É a forma mais fiável de provar o valor de
+      um modelo em produção.
+    example: "Grupo A: leads priorizados pelo modelo. Grupo B: ordem atual. Comparar conversão após 2 meses."
+    related: [grupo_controlo, p_value, champion_challenger]
+    steps: [monitorizacao]
+
+  - id: causalidade
+    term: Correlação vs causalidade
+    en: Correlation vs causation
+    category: negocio
+    level: intermédio
+    short: Uma variável associada ao resultado não é necessariamente a sua causa.
+    definition: >-
+      Os modelos preditivos exploram associações. Uma variável importante não
+      implica que alterá-la mude o resultado. Para decisões de intervenção
+      (preço, políticas de RH) valide com experiências ou métodos causais.
+    example: Clientes com mais contactos ao apoio saem mais — mas reduzir contactos não reduz churn se o problema de fundo persistir.
+    related: [importancia_features, uplift, teste_ab]
+    steps: [explicabilidade]
+
+  - id: elasticidade
+    term: Elasticidade preço-procura
+    en: Price elasticity of demand
+    category: negocio
+    level: avançado
+    short: Variação percentual da procura quando o preço varia 1%.
+    definition: >-
+      Elasticidade −1,8 significa que subir o preço 1% reduz as unidades 1,8%.
+      Estima-se com regressão log-log: o coeficiente de log(preço) é a
+      elasticidade. Valores entre 0 e −1 indicam procura inelástica.
+    formula: ε = (ΔQ/Q) / (ΔP/P) ≈ coeficiente de log(P) em log(Q) = a + ε·log(P) + ...
+    example: Bebidas com ε = −2,1 (elástico) vs Frescos com ε = −0,6 (inelástico).
+    related: [transformacao_log, regressao_linear, pdp]
+    steps: [explicabilidade]
+
+  - id: dso
+    term: DSO (prazo médio de recebimento)
+    en: Days Sales Outstanding
+    category: negocio
+    level: intermédio
+    short: Nº médio de dias que a empresa demora a receber das vendas a crédito.
+    formula: DSO = (Contas a receber / Vendas a crédito) × nº de dias do período
+    definition: Indicador de tesouraria que modelos de risco de atraso ajudam a reduzir.
+    example: DSO de 58 dias com prazo médio contratual de 45 dias.
+    related: [matriz_custo_beneficio]
+    steps: [enquadramento]
+
+  - id: nps
+    term: NPS (Net Promoter Score)
+    en: Net Promoter Score
+    category: negocio
+    level: básico
+    short: Indicador de lealdade baseado na probabilidade de recomendar (0-10).
+    formula: NPS = % Promotores (9-10) − % Detratores (0-6)
+    definition: Varia entre −100 e +100. A modelação de drivers identifica o que distingue promotores de detratores.
+    example: 45% promotores e 20% detratores → NPS = 25.
+    related: [importancia_features]
+    steps: [enquadramento]
+
+  - id: otif
+    term: OTIF (On Time In Full)
+    en: On Time In Full
+    category: negocio
+    level: básico
+    short: "% de entregas feitas no prazo e completas."
+    definition: KPI logístico central; modelos de risco de atraso permitem agir antes do incumprimento.
+    example: OTIF de 87% em novembro.
+    related: [nivel_servico]
+    steps: [enquadramento]
+
+  - id: nivel_servico
+    term: Nível de serviço
+    en: Service level
+    category: negocio
+    level: básico
+    short: Probabilidade de satisfazer a procura sem rutura (ou cumprir o SLA).
+    definition: Em stocks, um nível de serviço de 95% significa ruturas em apenas 5% dos ciclos. Liga o erro de previsão ao stock de segurança.
+    example: Stock de segurança dimensionado para 97% de nível de serviço nos Frescos.
+    related: [rutura, intervalo_previsao]
+    steps: [enquadramento]
+
+  - id: rutura
+    term: Rutura de stock
+    en: Stockout
+    category: negocio
+    level: básico
+    short: Situação em que um produto fica sem stock disponível para venda.
+    definition: Gera vendas perdidas e insatisfação. Atenção — durante a rutura as vendas registadas subestimam a procura real.
+    example: Família Bebidas esgotada no Porto durante 2 dias de calor.
+    related: [nivel_servico, previsao_procura_termo]
+    steps: [enquadramento]
+
+  - id: previsao_procura_termo
+    term: Previsão de procura
+    en: Demand forecasting
+    category: negocio
+    level: básico
+    short: Estimar a quantidade que os clientes vão querer comprar.
+    definition: Base do planeamento de stock, compras e produção. A procura difere das vendas quando há ruturas.
+    example: Previsão diária de unidades por família e loja para as próximas 2 semanas.
+    related: [serie_temporal, rutura]
+    steps: [enquadramento]
+
+  - id: sla
+    term: SLA (acordo de nível de serviço)
+    en: Service Level Agreement
+    category: negocio
+    level: básico
+    short: "Compromisso de tempo/qualidade de serviço (ex.: resolver em 24h)."
+    definition: Modelos de tempo de resolução permitem antecipar incumprimentos de SLA e priorizar tickets.
+    example: 90% dos tickets urgentes resolvidos em 4 horas.
+    related: [regressao]
+    steps: [enquadramento]
+
+  - id: attrition
+    term: Attrition (rotatividade voluntária)
+    en: Employee attrition
+    category: negocio
+    level: básico
+    short: Saída voluntária de colaboradores.
+    definition: >-
+      Modelos de attrition são sensíveis do ponto de vista ético e legal (AI
+      Act — alto risco). Devem ser usados preferencialmente para análise
+      agregada de drivers e políticas, não para decisões individuais.
+    example: Taxa de saída voluntária anual de 14% em TI.
+    related: [ai_act, fairness, rgpd]
+    steps: [enquadramento, governanca]
+
+  - id: fraude
+    term: Fraude
+    en: Fraud
+    category: negocio
+    level: intermédio
+    short: Transação ou ação ilegítima com intenção de obter ganho indevido.
+    definition: >-
+      Problema clássico de classes extremamente desequilibradas e de
+      adversários que mudam de comportamento (concept drift). Combina modelos
+      supervisionados (fraude conhecida) com deteção de anomalias (fraude nova).
+    example: 0,4% das transações online confirmadas como fraudulentas.
+    related: [desequilibrio_classes, pr_auc, concept_drift, anomalia]
+    steps: [enquadramento]
+
+  - id: pd
+    term: PD (probabilidade de incumprimento)
+    en: Probability of Default
+    category: negocio
+    level: avançado
+    short: Probabilidade de um devedor entrar em incumprimento num horizonte (tipicamente 12 meses).
+    definition: >-
+      Componente da perda esperada (EL = PD × LGD × EAD). Exige probabilidades
+      bem calibradas, documentação e validação independente.
+    formula: Perda esperada = PD × LGD × EAD
+    example: PD de 3,5% para um crédito pessoal de 10.000€ com LGD de 45% → perda esperada 157,5€.
+    related: [calibracao, ks_estatistica, gini, ai_act]
+    steps: [enquadramento, avaliacao]
+
+  - id: manutencao_preditiva
+    term: Manutenção preditiva
+    en: Predictive maintenance
+    category: negocio
+    level: intermédio
+    short: Antecipar falhas de equipamentos a partir de dados de sensores e histórico.
+    definition: Permite intervir antes da avaria, reduzindo paragens não planeadas. As falhas são eventos raros, pelo que o recall é crítico.
+    example: Alerta de falha provável na Prensa EQ-07 nos próximos 7 dias.
+    related: [recall, desequilibrio_classes, anomalia]
+    steps: [enquadramento]
+
+  # ================================================================ DADOS & POWER BI
+  - id: power_bi_service
+    term: Power BI Service
+    en: Power BI Service
+    category: dados_powerbi
+    level: básico
+    short: Plataforma cloud onde se publicam relatórios, modelos semânticos e dataflows.
+    definition: >-
+      A plataforma liga-se ao Power BI Service através do conector interno da
+      empresa (ou da API REST oficial) para listar workspaces, modelos
+      semânticos e tabelas, executar consultas DAX e, opcionalmente, devolver
+      previsões para uma tabela consumível em relatórios.
+    example: Workspace "Comercial & Marketing" com o modelo semântico "CRM e Clientes".
+    related: [workspace_pbi, modelo_semantico, dax, conector_interno]
+    steps: [dados]
+
+  - id: workspace_pbi
+    term: Workspace (área de trabalho)
+    en: Workspace
+    category: dados_powerbi
+    level: básico
+    short: Contentor no Power BI Service que agrupa modelos semânticos, relatórios e dashboards.
+    definition: As permissões de acesso aos dados são geridas ao nível do workspace; o conector só vê os workspaces a que a identidade configurada tem acesso.
+    example: Workspace "Finanças & Risco".
+    related: [power_bi_service, modelo_semantico]
+    steps: [dados]
+
+  - id: modelo_semantico
+    term: Modelo semântico (antigo dataset)
+    en: Semantic model
+    category: dados_powerbi
+    level: básico
+    short: O modelo de dados do Power BI — tabelas, relações, medidas e colunas calculadas.
+    definition: >-
+      É a fonte certificada de verdade usada nos relatórios. Extrair dados
+      para ML a partir do modelo semântico garante que se usam as mesmas
+      definições de negócio que os dashboards.
+    example: Modelo "Vendas e Retalho" com as tabelas VendasDiarias, LinhasTalao e Stock.
+    related: [dax, tabela_factos, tabela_dimensao]
+    steps: [dados]
+
+  - id: dax
+    term: DAX
+    en: Data Analysis Expressions
+    category: dados_powerbi
+    level: intermédio
+    short: Linguagem de fórmulas e consultas do Power BI.
+    definition: >-
+      Usada para medidas, colunas calculadas e consultas (EVALUATE). O Agente
+      de Dados gera consultas DAX para extrair tabelas com filtros e colunas
+      selecionadas, que pode editar.
+    example: "EVALUATE CALCULATETABLE('Clientes', 'Clientes'[segmento] = \"PME\")"
+    related: [evaluate_dax, medida_dax, modelo_semantico]
+    steps: [dados, implementacao]
+
+  - id: evaluate_dax
+    term: Consulta EVALUATE
+    en: DAX query (EVALUATE)
+    category: dados_powerbi
+    level: intermédio
+    short: Instrução DAX que devolve uma tabela — a forma de extrair dados do modelo semântico.
+    definition: >-
+      Combinada com TOPN, SELECTCOLUMNS, CALCULATETABLE e SUMMARIZECOLUMNS
+      permite extrair exatamente a granularidade e as colunas necessárias. A
+      API executeQueries devolve no máximo 100 mil linhas / 1 milhão de
+      valores por consulta.
+    example: "EVALUATE SUMMARIZECOLUMNS('Calendario'[Data], \"Vendas\", [Total Vendas])"
+    related: [dax, api_execute_queries]
+    steps: [dados]
+
+  - id: medida_dax
+    term: Medida (DAX)
+    en: Measure
+    category: dados_powerbi
+    level: básico
+    short: Cálculo agregado dinâmico avaliado no contexto do relatório.
+    definition: "O Agente de Implementação sugere medidas DAX para consumir previsões (ex.: Receita em Risco)."
+    example: "Receita em Risco = SUMX(Previsoes_Churn, Previsoes_Churn[probabilidade] * Previsoes_Churn[valor])"
+    related: [dax, coluna_calculada]
+    steps: [implementacao]
+
+  - id: coluna_calculada
+    term: Coluna calculada
+    en: Calculated column
+    category: dados_powerbi
+    level: básico
+    short: Coluna adicionada a uma tabela com uma expressão DAX avaliada linha a linha.
+    definition: "Útil para criar features simples no próprio modelo semântico (ex.: antiguidade em meses), mas aumenta o tamanho do modelo."
+    example: "Antiguidade = DATEDIFF(Clientes[data_adesao], TODAY(), MONTH)"
+    related: [medida_dax, feature_engineering]
+    steps: [features]
+
+  - id: api_execute_queries
+    term: API executeQueries
+    en: Power BI REST API — Execute Queries
+    category: dados_powerbi
+    level: avançado
+    short: Endpoint REST do Power BI que executa consultas DAX sobre um modelo semântico.
+    definition: >-
+      POST /v1.0/myorg/groups/{workspace}/datasets/{dataset}/executeQueries.
+      Requer autenticação Azure AD (ex.: service principal) e a definição de
+      tenant que permite a API. É usado pelo conector REST de referência da
+      plataforma quando o conector interno não está disponível.
+    example: Extrair 50.000 linhas da tabela Faturas com um EVALUATE.
+    related: [service_principal, evaluate_dax, conector_interno]
+    steps: [dados]
+
+  - id: conector_interno
+    term: Conector interno Power BI
+    en: Internal Power BI connector
+    category: dados_powerbi
+    level: intermédio
+    short: Componente desenvolvido internamente para aceder ao Power BI Service; a plataforma liga-se a ele através de um adaptador.
+    definition: >-
+      O adaptador traduz as operações da plataforma (listar workspaces,
+      modelos, tabelas, executar DAX, escrever resultados) para os métodos do
+      conector interno, configurados em ficheiro, sem alterar o código da
+      plataforma.
+    example: MLSTUDIO_INTERNAL_CONNECTOR=empresa_pbi.conector:PowerBIClient
+    related: [power_bi_service, api_execute_queries]
+    steps: [dados]
+
+  - id: service_principal
+    term: Service principal
+    en: Service principal
+    category: dados_powerbi
+    level: avançado
+    short: Identidade de aplicação no Azure AD usada para aceder ao Power BI sem utilizador.
+    definition: Tem de ser adicionada aos workspaces e autorizada nas definições de tenant do Power BI. Os segredos devem ficar em cofres/variáveis de ambiente, nunca no código.
+    example: App "ml-studio-bi" com acesso de Membro ao workspace "Finanças & Risco".
+    related: [api_execute_queries]
+    steps: [dados]
+
+  - id: push_dataset
+    term: Modelo semântico push / escrita de resultados
+    en: Push dataset
+    category: dados_powerbi
+    level: avançado
+    short: Modelo que recebe linhas via API — usado para publicar previsões no Power BI.
+    definition: >-
+      O Agente de Implementação pode escrever a tabela de previsões no Power
+      BI (via conector interno ou API de push) ou exportar CSV/Excel/Parquet
+      para ser carregado por um dataflow/lakehouse.
+    example: Tabela Previsoes_Churn atualizada mensalmente após o scoring.
+    related: [scoring_batch, medida_dax]
+    steps: [implementacao]
+
+  - id: tabela_factos
+    term: Tabela de factos
+    en: Fact table
+    category: dados_powerbi
+    level: básico
+    short: Tabela com eventos/transações mensuráveis (vendas, faturas, tickets).
+    definition: "Normalmente muito granular. Para ML, é frequentemente agregada à unidade de análise (ex.: vendas por cliente nos últimos 12 meses)."
+    example: LinhasTalao com uma linha por produto vendido.
+    related: [tabela_dimensao, granularidade]
+    steps: [dados]
+
+  - id: tabela_dimensao
+    term: Tabela de dimensão
+    en: Dimension table
+    category: dados_powerbi
+    level: básico
+    short: Tabela descritiva (cliente, produto, loja, calendário).
+    definition: Fornece atributos que se tornam features depois de juntos à unidade de análise.
+    example: Dimensão Cliente com segmento, região e canal de aquisição.
+    related: [tabela_factos]
+    steps: [dados]
+
+  - id: granularidade
+    term: Granularidade
+    en: Grain / granularity
+    category: dados_powerbi
+    level: básico
+    short: O nível de detalhe de uma tabela (o que representa cada linha).
+    definition: A granularidade da tabela de treino deve coincidir com a unidade de decisão (cliente, fatura, loja × dia).
+    example: Vendas ao nível talão × produto vs agregadas por loja × dia.
+    related: [observacao, tabela_factos]
+    steps: [dados]
+
+  - id: snapshot
+    term: Snapshot de dados
+    en: Data snapshot
+    category: dados_powerbi
+    level: intermédio
+    short: Cópia fixa dos dados num momento, usada para treinar de forma reprodutível.
+    definition: A plataforma guarda o snapshot extraído do Power BI em cada projeto para que o treino seja reproduzível mesmo que o modelo semântico mude.
+    example: Snapshot "Clientes" de 22/11/2026 com 6.000 linhas.
+    related: [reprodutibilidade, data_corte]
+    steps: [dados]
+
+  - id: data_corte
+    term: Data de corte (data de referência)
+    en: Cut-off / reference date
+    category: dados_powerbi
+    level: intermédio
+    short: Momento no tempo que separa a informação usada nas features (antes) do resultado (depois).
+    definition: >-
+      Fundamental para evitar leakage. As features devem usar apenas dados
+      anteriores à data de corte; o alvo observa-se na janela seguinte.
+    example: "Data de corte 01/06: features com dados até 31/05; churn observado entre 01/06 e 31/08."
+    related: [data_leakage, janela_observacao, horizonte_previsao]
+    steps: [enquadramento, dados]
+
+  - id: janela_observacao
+    term: Janela de observação
+    en: Observation window
+    category: dados_powerbi
+    level: intermédio
+    short: Período antes da data de corte usado para calcular as features.
+    definition: "Ex.: últimos 3, 6 e 12 meses de compras. Janelas diferentes captam comportamento recente vs estrutural."
+    example: Nº de compras nos 12 meses anteriores à data de corte.
+    related: [data_corte, horizonte_previsao]
+    steps: [features]
+
+  # ================================================================ ESTATÍSTICA
+  - id: media_mediana
+    term: Média e mediana
+    en: Mean and median
+    category: estatistica
+    level: básico
+    short: Medidas de tendência central; a mediana é robusta a valores extremos.
+    definition: "Quando média e mediana diferem muito, a distribuição é assimétrica (ex.: valor de compras)."
+    example: Média de compras 820€, mediana 310€ → poucos clientes com valores muito altos.
+    related: [assimetria, outlier]
+    steps: [perfil]
+
+  - id: desvio_padrao
+    term: Desvio padrão
+    en: Standard deviation
+    category: estatistica
+    level: básico
+    short: Medida de dispersão em torno da média.
+    definition: Em distribuições normais, ~95% dos valores estão a menos de 2 desvios padrão da média.
+    formula: σ = √(Σ(x − média)² / n)
+    example: Tempo de entrega médio 3,1 dias com desvio padrão 1,4.
+    related: [media_mediana, zscore_robusto]
+    steps: [perfil]
+
+  - id: percentil
+    term: Percentil / quartil
+    en: Percentile / quartile
+    category: estatistica
+    level: básico
+    short: Valor abaixo do qual fica uma dada percentagem das observações.
+    definition: Q1 = percentil 25, Q2 = mediana, Q3 = percentil 75. Usados para detetar outliers (IQR) e criar bandas de risco.
+    example: Percentil 90 do score de churn = 0,52 → top 10% de risco.
+    related: [iqr, outlier]
+    steps: [perfil]
+
+  - id: distribuicao
+    term: Distribuição
+    en: Distribution
+    category: estatistica
+    level: básico
+    short: Forma como os valores de uma variável se repartem.
+    definition: O Agente de Perfil mostra histogramas de cada variável para identificar assimetrias, valores extremos e erros.
+    example: Distribuição bimodal de idades (dois picos).
+    related: [assimetria, media_mediana]
+    steps: [perfil]
+
+  - id: assimetria
+    term: Assimetria (skewness)
+    en: Skewness
+    category: estatistica
+    level: intermédio
+    short: Grau em que a distribuição tem uma cauda mais longa de um dos lados.
+    definition: >-
+      Assimetria positiva (cauda à direita) é comum em valores monetários.
+      Acima de |1| considera-se forte; transformações log ajudam modelos
+      lineares e clustering.
+    example: Valor de compras com skewness 3,2.
+    related: [transformacao_log, distribuicao]
+    steps: [perfil, features]
+
+  - id: correlacao
+    term: Correlação (Pearson e Spearman)
+    en: Correlation
+    category: estatistica
+    level: básico
+    short: Medida (−1 a 1) da associação entre duas variáveis numéricas.
+    definition: >-
+      Pearson mede relação linear; Spearman mede relação monotónica (baseada
+      em ordens) e é robusta a outliers. Correlação muito alta entre features
+      indica redundância (multicolinearidade); com o alvo pode indicar leakage.
+    example: Correlação de 0,92 entre mensalidade e valor de compras.
+    related: [multicolinearidade, cramers_v, causalidade]
+    steps: [perfil]
+
+  - id: cramers_v
+    term: V de Cramér
+    en: Cramér's V
+    category: estatistica
+    level: avançado
+    short: Medida de associação (0 a 1) entre duas variáveis categóricas.
+    definition: Baseada no qui-quadrado. Útil para medir a relação entre categorias e um alvo categórico.
+    example: V = 0,31 entre plano e churn.
+    related: [correlacao, qui_quadrado]
+    steps: [perfil]
+
+  - id: qui_quadrado
+    term: Teste do qui-quadrado
+    en: Chi-squared test
+    category: estatistica
+    level: avançado
+    short: Testa se duas variáveis categóricas são independentes.
+    definition: Usado também na monitorização para detetar drift em variáveis categóricas.
+    example: Distribuição de canais de aquisição mudou significativamente (p < 0,01).
+    related: [p_value, drift_dados]
+    steps: [monitorizacao]
+
+  - id: p_value
+    term: Valor-p (p-value)
+    en: p-value
+    category: estatistica
+    level: intermédio
+    short: Probabilidade de observar um resultado tão extremo se não houvesse efeito real.
+    definition: Valor-p < 0,05 é convencionalmente "estatisticamente significativo". Com muitos dados quase tudo é significativo — olhe também para a dimensão do efeito.
+    example: Teste A/B com p = 0,003 → diferença de conversão dificilmente é acaso.
+    related: [teste_ab, intervalo_confianca]
+    steps: [avaliacao, monitorizacao]
+
+  - id: intervalo_confianca
+    term: Intervalo de confiança
+    en: Confidence interval
+    category: estatistica
+    level: intermédio
+    short: Intervalo que contém o verdadeiro valor de um parâmetro com uma dada confiança.
+    definition: "Comunica a incerteza de uma estimativa (ex.: AUC = 0,81 ± 0,02 na validação cruzada)."
+    example: Elasticidade −1,8 com IC 95% [−2,1; −1,5].
+    related: [intervalo_previsao, validacao_cruzada]
+    steps: [avaliacao]
+
+  - id: amostragem
+    term: Amostragem
+    en: Sampling
+    category: estatistica
+    level: básico
+    short: Selecionar um subconjunto representativo dos dados.
+    definition: A plataforma amostra automaticamente bases muito grandes para acelerar a exploração, preservando a proporção do alvo (estratificação).
+    example: Amostra estratificada de 200 mil de 3 milhões de transações.
+    related: [estratificacao, vies_amostragem]
+    steps: [dados]

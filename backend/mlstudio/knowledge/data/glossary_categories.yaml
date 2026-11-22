@@ -1,0 +1,18 @@
+# Categorias do glossário, pela ordem em que aparecem no percurso de um projeto.
+categories:
+  - {id: fundamentos, name: Fundamentos de ML, icon: book-open, description: Conceitos base para quem está a começar.}
+  - {id: negocio, name: Negócio & Decisão, icon: briefcase, description: Ligar o modelo a decisões, custos e KPIs.}
+  - {id: dados_powerbi, name: Dados & Power BI, icon: database, description: Extração de dados do Power BI Service e conceitos de modelação de dados.}
+  - {id: estatistica, name: Estatística, icon: sigma, description: Conceitos estatísticos usados na exploração e avaliação.}
+  - {id: qualidade, name: Qualidade de Dados, icon: shield-check, description: Problemas típicos dos dados e como os tratar.}
+  - {id: preparacao, name: Preparação & Features, icon: wrench, description: Transformar dados brutos em variáveis úteis para o modelo.}
+  - {id: modelos, name: Modelos & Algoritmos, icon: brain, description: Famílias de algoritmos e quando usar cada uma.}
+  - {id: hiperparametros, name: Hiperparâmetros, icon: sliders, description: Botões de afinação dos modelos e o seu efeito.}
+  - {id: validacao, name: Validação & Treino, icon: flask, description: Como treinar e estimar o desempenho de forma honesta.}
+  - {id: metricas_classificacao, name: Métricas de Classificação, icon: target, description: Medir modelos que preveem classes e probabilidades.}
+  - {id: metricas_regressao, name: Métricas de Regressão & Previsão, icon: ruler, description: Medir erros de valores numéricos e previsões.}
+  - {id: series_temporais, name: Séries Temporais, icon: line-chart, description: Previsão de valores ao longo do tempo.}
+  - {id: nao_supervisionado, name: Segmentação, Anomalias & Associação, icon: scatter, description: Aprendizagem sem alvo.}
+  - {id: explicabilidade, name: Explicabilidade, icon: lightbulb, description: Perceber porque o modelo decide o que decide.}
+  - {id: mlops, name: Implementação & MLOps, icon: rocket, description: Pôr modelos em produção e mantê-los saudáveis.}
+  - {id: governanca, name: Governança & Ética, icon: scale, description: RGPD, AI Act, equidade e responsabilidade.}

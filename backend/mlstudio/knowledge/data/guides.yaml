@@ -1,0 +1,230 @@
+# Guias passo-a-passo por tipo de problema e temas transversais.
+# O conteúdo das secções é Markdown.
+guides:
+  - id: guia_primeiro_projeto
+    title: O seu primeiro projeto em 30 minutos
+    audience: Analistas de BI sem experiência de ML
+    duration: 30 min
+    problem_type: null
+    summary: Percorra o ciclo completo com dados de demonstração — do enquadramento à tabela de previsões no Power BI.
+    sections:
+      - title: 1. Criar o projeto
+        content: |
+          Vá a **Casos de uso**, escolha *Previsão de churn de clientes* e clique em
+          **Criar projeto**. A plataforma preenche automaticamente a fonte de dados
+          de demonstração (tabela `Clientes`), o alvo (`churn`) e as colunas a excluir.
+        terms: [churn, target]
+      - title: 2. Usar o piloto automático
+        content: |
+          No projeto, clique em **Piloto automático**. Os agentes executam, por ordem,
+          enquadramento → perfil → qualidade → features → seleção de modelos →
+          hiperparâmetros → treino → avaliação → explicabilidade → governança.
+          Cada passo fica marcado no percurso à esquerda.
+        terms: [pipeline]
+      - title: 3. Ler os resultados
+        content: |
+          Comece pela **Avaliação**: compare a AUC com a baseline e veja o *lift* no
+          1.º decil. Depois a **Explicabilidade**: os principais drivers fazem sentido?
+          Se algum driver parecer "bom demais", desconfie de *data leakage*.
+        terms: [auc_roc, lift, data_leakage]
+      - title: 4. Afinar parâmetros
+        content: |
+          Abra o passo **Hiperparâmetros** e experimente alterar a `learning_rate` e o
+          `num_leaves` do LightGBM. O conselheiro avisa quando a combinação aumenta o
+          risco de overfitting. Use **Comparar com recomendado** para medir o efeito.
+        terms: [learning_rate, num_leaves, overfitting]
+      - title: 5. Publicar no Power BI
+        content: |
+          Em **Implementação**, promova o modelo e execute o *scoring*. Obtém a tabela
+          `Previsoes_Churn` (exportável ou escrita no Power BI) e as medidas DAX
+          sugeridas, prontas a colar no seu relatório.
+        terms: [scoring_batch, medida_dax]
+
+  - id: guia_classificacao
+    title: Guia de classificação (sim/não e categorias)
+    audience: Analistas de BI
+    duration: 15 min de leitura
+    problem_type: binary_classification
+    summary: Como construir, avaliar e operacionalizar modelos de classificação — churn, propensão, fraude, risco.
+    sections:
+      - title: Quando usar
+        content: |
+          Sempre que a pergunta é "vai acontecer X?" ou "a que categoria pertence?".
+          O resultado é uma **probabilidade** que se transforma em decisão através de
+          um **limiar**.
+        terms: [classificacao, probabilidade, limiar_decisao]
+      - title: Preparar o alvo
+        content: |
+          - Defina o evento e a janela (ex.: cancelou nos 90 dias após a data de corte).
+          - Garanta que todas as features usam só informação anterior à data de corte.
+          - Verifique a taxa de positivos: abaixo de 10% é desequilíbrio a tratar.
+        terms: [data_corte, desequilibrio_classes]
+      - title: Escolher a métrica
+        content: |
+          | Situação | Métrica principal |
+          |---|---|
+          | Ordenar clientes para campanha | AUC-ROC + lift |
+          | Classe muito rara (fraude, avarias) | PR-AUC + recall |
+          | Probabilidade usada como valor (PD) | Brier + calibração |
+          | Multiclasse com classes pequenas | F1-macro |
+        terms: [auc_roc, pr_auc, brier_score, f1_score]
+      - title: Tratar o desequilíbrio
+        content: |
+          1. Use métricas adequadas (nunca accuracy).
+          2. Use `class_weight="balanced"` ou `scale_pos_weight`.
+          3. Escolha o limiar pela matriz de custo-benefício.
+          4. Se precisar de probabilidades reais, recalibre.
+        terms: [class_weight, scale_pos_weight, calibracao]
+      - title: Decidir o limiar
+        content: |
+          O Agente de Avaliação calcula o lucro esperado para cada limiar com os
+          custos do caso de uso. Em alternativa, defina a capacidade (ex.: 500
+          contactos/mês) e use o top-N.
+        terms: [matriz_custo_beneficio, curva_ganhos]
+      - title: No Power BI
+        content: |
+          Publique `probabilidade`, `banda_risco` (Alto/Médio/Baixo) e
+          `principais_motivos`. Crie uma tabela de ação ordenada por valor em risco.
+        terms: [explicacao_local, medida_dax]
+
+  - id: guia_regressao
+    title: Guia de regressão (prever valores)
+    audience: Analistas de BI
+    duration: 10 min de leitura
+    problem_type: regression
+    summary: Prever valores numéricos — CLV, tempos, montantes — e medir o erro em unidades de negócio.
+    sections:
+      - title: Quando usar
+        content: Quando o resultado é um número contínuo (euros, dias, horas, unidades).
+        terms: [regressao]
+      - title: Atenção à distribuição do alvo
+        content: |
+          Valores monetários e tempos são quase sempre assimétricos. Considere prever
+          `log(1 + y)` ou usar métricas robustas (MAE). Valores extremos dominam o RMSE.
+        terms: [assimetria, transformacao_log, mae, rmse]
+      - title: Avaliar
+        content: |
+          - **MAE**: erro médio na unidade do negócio ("erramos 1,2 dias").
+          - **R²**: quanto da variação o modelo explica.
+          - **Resíduos por segmento**: onde o modelo falha sistematicamente?
+        terms: [mae, r2, residuo]
+      - title: Comunicar incerteza
+        content: "Para prazos/stock, considere prever um quantil (ex.: P90) em vez da média."
+        terms: [regressao_quantilica, intervalo_previsao]
+
+  - id: guia_previsao
+    title: Guia de previsão de séries temporais
+    audience: Analistas de BI e planeamento
+    duration: 15 min de leitura
+    problem_type: forecasting
+    summary: Prever vendas, procura, tesouraria ou contactos com backtesting honesto.
+    sections:
+      - title: Preparar a série
+        content: |
+          - Escolha a **frequência** igual à decisão (diária, semanal, mensal).
+          - Garanta datas contínuas (o agente preenche dias em falta com 0 ou interpolação).
+          - Decida as **séries** (ex.: por loja) e o **horizonte**.
+        terms: [frequencia_temporal, serie_temporal, horizonte_previsao]
+      - title: Perceber a estrutura
+        content: O agente mede tendência, força da sazonalidade e autocorrelação, e sugere o período sazonal.
+        terms: [tendencia, sazonalidade, autocorrelacao, decomposicao]
+      - title: Modelos
+        content: |
+          1. **Naive sazonal** — baseline obrigatória.
+          2. **Holt-Winters** — robusto por série.
+          3. **SARIMA** — clássico estatístico.
+          4. **Gradient boosting com lags** — modelo global com calendário e promoções.
+        terms: [naive_sazonal, holt_winters_termo, arima_termo, modelo_global]
+      - title: Avaliar com backtesting
+        content: |
+          Nunca use divisão aleatória. O agente faz 3 backtests de origem móvel e
+          reporta WAPE, bias e MASE. Um MASE < 1 significa que bate o naive sazonal.
+        terms: [backtesting, wape, bias_previsao, mase]
+      - title: No Power BI
+        content: Publique a previsão com limites inferior/superior e compare com o orçamento.
+        terms: [intervalo_previsao]
+
+  - id: guia_segmentacao
+    title: Guia de segmentação (clustering)
+    audience: Marketing e BI
+    duration: 10 min de leitura
+    problem_type: clustering
+    summary: Criar segmentos acionáveis de clientes ou produtos.
+    sections:
+      - title: Escolher variáveis
+        content: |
+          Use 4 a 10 variáveis de comportamento (ex.: RFM). Muitas variáveis tornam os
+          segmentos difíceis de interpretar.
+        terms: [rfm, dimensionalidade]
+      - title: Preparar
+        content: Aplique log a variáveis assimétricas e normalize tudo (o agente faz automaticamente).
+        terms: [transformacao_log, standardizacao]
+      - title: Escolher k
+        content: O agente testa k de 2 a 10 e mostra silhueta e cotovelo. Prefira o k que o negócio consegue operar.
+        terms: [silhueta, cotovelo, kmeans]
+      - title: Interpretar
+        content: Leia o perfil de cada segmento (desvio face à média) e dê-lhe um nome de negócio.
+        terms: [perfil_segmento, centroide]
+
+  - id: guia_anomalias
+    title: Guia de deteção de anomalias
+    audience: Finanças, Auditoria, Operações
+    duration: 8 min de leitura
+    problem_type: anomaly_detection
+    summary: Priorizar casos invulgares para revisão humana.
+    sections:
+      - title: Definir a capacidade de revisão
+        content: "A contaminação deve refletir quantos casos a equipa consegue rever (ex.: 2%)."
+        terms: [contaminacao]
+      - title: Modelos
+        content: Isolation Forest (global), LOF (local) e z-score robusto (regras por variável).
+        terms: [isolation_forest, lof, zscore_robusto]
+      - title: Validar
+        content: Se existirem casos confirmados, meça a precisão no top-k. Caso contrário, faça revisão amostral.
+        terms: [precision_at_k, human_in_the_loop]
+
+  - id: guia_associacao
+    title: Guia de análise de cabaz
+    audience: Comercial e Category Management
+    duration: 8 min de leitura
+    problem_type: association_rules
+    summary: Encontrar produtos comprados em conjunto.
+    sections:
+      - title: Dados
+        content: Precisa de uma tabela com o identificador da transação (talão) e o produto/categoria.
+        terms: [itemset]
+      - title: Métricas
+        content: |
+          - **Suporte**: frequência da combinação.
+          - **Confiança**: P(B | A).
+          - **Lift**: força da associação face ao acaso (> 1).
+        terms: [suporte, confianca, lift_associacao]
+      - title: Ação
+        content: Use as regras com lift alto e suporte razoável para promoções cruzadas e disposição em loja.
+        terms: [regra_associacao]
+
+  - id: guia_powerbi
+    title: Ligar a plataforma ao Power BI Service
+    audience: Equipa de BI / administradores
+    duration: 10 min
+    problem_type: null
+    summary: Como configurar o conector interno (ou a API REST) e devolver previsões ao Power BI.
+    sections:
+      - title: Conector interno
+        content: |
+          Defina `MLSTUDIO_INTERNAL_CONNECTOR=pacote.modulo:Classe` e, se necessário,
+          `MLSTUDIO_INTERNAL_CONNECTOR_CONFIG` com o mapeamento de métodos. O adaptador
+          chama o vosso conector para listar workspaces, modelos semânticos e tabelas,
+          executar DAX e escrever resultados. Veja `docs/CONECTOR_POWERBI.md`.
+        terms: [conector_interno]
+      - title: API REST oficial (alternativa)
+        content: |
+          Configure um *service principal* (`PBI_TENANT_ID`, `PBI_CLIENT_ID`,
+          `PBI_CLIENT_SECRET`) com acesso aos workspaces e a definição de tenant que
+          permite a API *executeQueries*.
+        terms: [service_principal, api_execute_queries]
+      - title: Devolver previsões
+        content: |
+          O Agente de Implementação escreve a tabela de previsões através do conector
+          (push) ou exporta CSV/Excel/Parquet para um dataflow ou lakehouse.
+        terms: [push_dataset, scoring_batch]

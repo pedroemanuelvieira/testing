@@ -1,0 +1,103 @@
+# Tipos de problema de ML. Cada caso de uso aponta para um destes tipos.
+# Define métricas, modelos por omissão e o agente de treino responsável.
+problem_types:
+  - id: binary_classification
+    name: Classificação binária
+    short: "Prever sim/não (ex.: vai cancelar? vai pagar com atraso?)"
+    description: >-
+      O alvo tem duas classes (0/1). O modelo devolve uma probabilidade e um
+      limiar (threshold) converte-a numa decisão. É o tipo mais comum em BI:
+      churn, conversão de leads, fraude, incumprimento, atrasos.
+    learning: supervisionado
+    training_agent: training
+    primary_metric: roc_auc
+    metrics: [roc_auc, pr_auc, f1, precision, recall, balanced_accuracy, log_loss, brier]
+    default_models: [lightgbm, logistic_regression, random_forest, hist_gradient_boosting, xgboost]
+    guide: guia_classificacao
+    terms: [classificacao, probabilidade, limiar_decisao, matriz_confusao, auc_roc]
+
+  - id: multiclass_classification
+    name: Classificação multiclasse
+    short: "Prever uma de várias categorias (ex.: promotor / passivo / detrator)"
+    description: >-
+      O alvo tem três ou mais classes. O modelo devolve uma probabilidade por
+      classe; a classe prevista é a de maior probabilidade.
+    learning: supervisionado
+    training_agent: training
+    primary_metric: f1_macro
+    metrics: [f1_macro, f1_weighted, accuracy, balanced_accuracy, log_loss]
+    default_models: [lightgbm, random_forest, logistic_regression, hist_gradient_boosting]
+    guide: guia_classificacao
+    terms: [classificacao, f1_score, matriz_confusao]
+
+  - id: regression
+    name: Regressão
+    short: "Prever um valor numérico (ex.: valor futuro do cliente, dias de atraso)"
+    description: >-
+      O alvo é contínuo. O modelo prevê um número; avalia-se pelo tamanho dos
+      erros (MAE, RMSE) e pela percentagem de variância explicada (R²).
+    learning: supervisionado
+    training_agent: training
+    primary_metric: mae
+    metrics: [mae, rmse, r2, mape, wape]
+    default_models: [lightgbm, ridge, random_forest, hist_gradient_boosting, xgboost]
+    guide: guia_regressao
+    terms: [regressao, mae, rmse, r2, residuo]
+
+  - id: forecasting
+    name: Previsão de séries temporais
+    short: "Prever valores futuros no tempo (ex.: vendas das próximas 4 semanas)"
+    description: >-
+      Os dados são observações ordenadas no tempo (diárias, semanais, mensais).
+      Os modelos exploram tendência, sazonalidade e efeitos de calendário. A
+      validação é feita por backtesting (nunca com dados do futuro).
+    learning: supervisionado (temporal)
+    training_agent: forecasting
+    primary_metric: wape
+    metrics: [wape, mae, rmse, smape, mase, bias]
+    default_models: [seasonal_naive, holt_winters, gbm_lags, sarima]
+    guide: guia_previsao
+    terms: [serie_temporal, sazonalidade, tendencia, backtesting, horizonte_previsao, wape]
+
+  - id: clustering
+    name: Segmentação (clustering)
+    short: "Agrupar registos semelhantes sem alvo (ex.: segmentos de clientes)"
+    description: >-
+      Não existe alvo. O algoritmo descobre grupos com comportamento semelhante.
+      O valor está na interpretação de negócio de cada segmento.
+    learning: não supervisionado
+    training_agent: segmentation
+    primary_metric: silhouette
+    metrics: [silhouette, davies_bouldin, calinski_harabasz]
+    default_models: [kmeans, gaussian_mixture, agglomerative, dbscan]
+    guide: guia_segmentacao
+    terms: [clustering, kmeans, silhueta, perfil_segmento, rfm]
+
+  - id: anomaly_detection
+    name: Deteção de anomalias
+    short: "Encontrar registos fora do padrão (ex.: lançamentos ou leituras estranhas)"
+    description: >-
+      Identifica observações raras e diferentes da maioria. Normalmente não há
+      rótulos; quando existem (ex.: fraude confirmada) servem para validar.
+    learning: não supervisionado
+    training_agent: anomaly
+    primary_metric: precision_at_k
+    metrics: [precision_at_k, recall_at_k, pr_auc]
+    default_models: [isolation_forest, local_outlier_factor, robust_zscore]
+    guide: guia_anomalias
+    terms: [anomalia, isolation_forest, contaminacao, zscore_robusto]
+
+  - id: association_rules
+    name: Regras de associação (cabaz)
+    short: "Descobrir produtos comprados em conjunto (ex.: cross-sell em loja)"
+    description: >-
+      Analisa transações para encontrar combinações frequentes de itens e
+      regras "quem compra A também compra B", medidas por suporte, confiança e
+      lift.
+    learning: não supervisionado
+    training_agent: association
+    primary_metric: lift
+    metrics: [support, confidence, lift]
+    default_models: [apriori]
+    guide: guia_associacao
+    terms: [regra_associacao, suporte, confianca, lift_associacao]

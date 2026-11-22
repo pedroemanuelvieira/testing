@@ -1,0 +1,1455 @@
+# Casos de uso de negócio. Cada caso especializa os agentes:
+#  - framing: pergunta de negócio, alvo, decisão e KPIs
+#  - selection/advisor: modelos recomendados e perfil (interpretabilidade, desequilíbrio...)
+#  - evaluation: custos/benefícios de negócio para escolher o limiar
+#  - deployment: tabela, medidas DAX e visuais recomendados no Power BI
+#  - governance: nível de risco (AI Act) e atributos sensíveis
+#
+# O bloco "demo" aponta para um conjunto de dados sintético do conector demo,
+# para que a equipa possa treinar o fluxo completo sem dados reais.
+use_cases:
+  # ------------------------------------------------------------------ MARKETING
+  - id: churn_clientes
+    name: Previsão de churn de clientes
+    area: marketing
+    areas: [marketing, comercial, cliente]
+    problem_type: binary_classification
+    maturity: básico
+    summary: Identificar clientes com elevada probabilidade de cancelar para agir antes da saída.
+    business_question: Que clientes têm maior probabilidade de cancelar nos próximos 90 dias?
+    decision: >-
+      Selecionar os clientes a incluir na campanha de retenção (ex.: top 10% de
+      risco) e escolher a oferta adequada a cada um.
+    unit: Cliente na data de corte
+    target:
+      column: churn
+      definition: 1 se o cliente cancelou nos 90 dias seguintes à data de corte; 0 caso contrário.
+      positive_class: 1
+    horizon: 90 dias
+    typical_features:
+      - Antiguidade e tipo de plano/contrato
+      - Tendência de consumo (variação nos últimos 3 meses)
+      - Reclamações e contactos com o apoio ao cliente
+      - Recência, frequência e valor de compras (RFM)
+      - Meses até ao fim da fidelização
+      - Atrasos de pagamento
+    data_requirements:
+      - Histórico de pelo menos 12 meses
+      - Data de corte clara; features calculadas apenas com informação anterior a essa data
+      - Pelo menos ~500 casos positivos (churners) para resultados estáveis
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Clientes
+      target: churn
+      id_columns: [cliente_id]
+      exclude: [valor_futuro_12m, aderiu_cross_sell]
+    recommended_models:
+      - model: lightgbm
+        why: Melhor desempenho típico em dados tabulares com interações não lineares; rápido.
+      - model: logistic_regression
+        why: Base interpretável; coeficientes fáceis de comunicar ao marketing.
+      - model: random_forest
+        why: Robusto com pouca afinação; bom ponto de comparação.
+    metrics:
+      primary: roc_auc
+      secondary: [pr_auc, recall, lift_top_decile]
+      business: Receita retida líquida = clientes salvos × valor do cliente − custo das ofertas.
+    profile:
+      interpretability: média
+      imbalance: moderado
+      goal: equilibrado
+      latency: batch mensal
+    business_costs:
+      cost_fp: 15
+      cost_fn: 220
+      benefit_tp: 120
+      note: Valores face a não agir — FP = oferta dada a quem não ia sair (15€); VP = margem retida líquida da oferta (120€); FN = margem perdida de um churner não detetado (220€).
+    pitfalls:
+      - "Data leakage: incluir colunas preenchidas após o cancelamento (ex.: motivo de saída, data de rescisão)."
+      - Avaliar só pela accuracy — com 18% de churn um modelo que diz sempre "não sai" tem 82% de accuracy.
+      - Esquecer que clientes em campanha de retenção têm comportamento alterado.
+    powerbi_output:
+      table: Previsoes_Churn
+      columns: [cliente_id, probabilidade, banda_risco, principais_motivos, versao_modelo, data_scoring]
+      visuals:
+        - Matriz de clientes por banda de risco × segmento
+        - Gráfico de barras com os principais motivos de risco
+        - Tabela de ação (top 100 clientes) com motivos e valor em risco
+        - Cartão KPI com receita em risco
+      measures:
+        - name: Clientes em Risco Alto
+          dax: "Clientes em Risco Alto = CALCULATE(COUNTROWS(Previsoes_Churn), Previsoes_Churn[banda_risco] = \"Alto\")"
+        - name: Probabilidade Média de Churn
+          dax: "Prob. Média Churn = AVERAGE(Previsoes_Churn[probabilidade])"
+        - name: Receita em Risco
+          dax: "Receita em Risco = SUMX(Previsoes_Churn, Previsoes_Churn[probabilidade] * RELATED(Clientes[mensalidade]) * 12)"
+    ai_act_risk: mínimo
+    sensitive_attributes: [genero, idade]
+    terms: [churn, data_corte, data_leakage, auc_roc, lift, limiar_decisao, campanha_retencao]
+
+  - id: segmentacao_clientes
+    name: Segmentação comportamental de clientes (RFM)
+    area: marketing
+    areas: [marketing, comercial]
+    problem_type: clustering
+    maturity: básico
+    summary: Agrupar clientes por comportamento de compra para personalizar comunicação e ofertas.
+    business_question: Que grupos naturais de clientes existem e como se comportam?
+    decision: "Definir estratégias e ofertas diferenciadas por segmento (ex.: fidelizar, reativar, desenvolver)."
+    unit: Cliente
+    target:
+      column: null
+      definition: Não existe alvo — aprendizagem não supervisionada.
+    horizon: n/a
+    typical_features:
+      - Recência (dias desde a última compra)
+      - Frequência (nº de compras em 12 meses)
+      - Valor monetário (gasto em 12 meses)
+      - Nº de produtos, utilização de canais digitais
+    data_requirements:
+      - Variáveis numéricas comparáveis (normalizadas pelo agente)
+      - Evitar demasiadas variáveis — 4 a 10 é o ideal para segmentos interpretáveis
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Clientes
+      target: null
+      id_columns: [cliente_id]
+      features: [dias_desde_ultima_compra, n_compras_12m, valor_compras_12m, n_produtos, antiguidade_meses, mensalidade]
+    recommended_models:
+      - model: kmeans
+        why: Simples, rápido e produz segmentos fáceis de descrever pelo centróide.
+      - model: gaussian_mixture
+        why: Permite segmentos de formas e tamanhos diferentes e probabilidades de pertença.
+      - model: agglomerative
+        why: Útil para explorar hierarquias de segmentos em bases pequenas.
+    metrics:
+      primary: silhouette
+      secondary: [davies_bouldin, calinski_harabasz]
+      business: Diferença de valor/ comportamento entre segmentos e capacidade de ação.
+    profile:
+      interpretability: alta
+      goal: interpretabilidade
+    pitfalls:
+      - Não normalizar as variáveis — o valor monetário domina a distância.
+      - Escolher demasiados segmentos (>8) que o negócio não consegue operacionalizar.
+      - Variáveis muito assimétricas sem transformação logarítmica.
+    powerbi_output:
+      table: Segmentos_Clientes
+      columns: [cliente_id, segmento, nome_segmento, distancia_centro, versao_modelo]
+      visuals:
+        - Gráfico de dispersão Frequência × Valor colorido por segmento
+        - Tabela de perfil por segmento (médias)
+        - Treemap com nº de clientes e receita por segmento
+      measures:
+        - name: Receita por Segmento
+          dax: "Receita Segmento = CALCULATE(SUM(Clientes[valor_compras_12m]))"
+        - name: Peso do Segmento
+          dax: "% Clientes = DIVIDE(COUNTROWS(Segmentos_Clientes), CALCULATE(COUNTROWS(Segmentos_Clientes), ALL(Segmentos_Clientes)))"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [clustering, rfm, kmeans, silhueta, standardizacao, perfil_segmento]
+
+  - id: clv
+    name: Valor futuro do cliente (CLV)
+    area: marketing
+    areas: [marketing, comercial, financas]
+    problem_type: regression
+    maturity: intermédio
+    summary: Estimar quanto cada cliente vai gerar nos próximos 12 meses.
+    business_question: Quanto valor (margem/receita) vai cada cliente gerar no próximo ano?
+    decision: Priorizar investimento de aquisição e retenção nos clientes de maior valor futuro.
+    unit: Cliente na data de corte
+    target:
+      column: valor_futuro_12m
+      definition: Receita gerada pelo cliente nos 12 meses seguintes à data de corte.
+    horizon: 12 meses
+    typical_features:
+      - RFM histórico
+      - Plano, nº de produtos e mensalidade
+      - Antiguidade e canal de aquisição
+      - Tendência de consumo
+    data_requirements:
+      - Histórico ≥ 24 meses (12 para features + 12 para o alvo)
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Clientes
+      target: valor_futuro_12m
+      id_columns: [cliente_id]
+      exclude: [churn, aderiu_cross_sell]
+    recommended_models:
+      - model: lightgbm
+        why: Capta relações não lineares entre RFM e valor futuro.
+      - model: ridge
+        why: Base linear robusta e interpretável.
+      - model: random_forest
+        why: Comparação robusta com pouca afinação.
+    metrics:
+      primary: mae
+      secondary: [rmse, r2, wape]
+      business: Erro médio em euros por cliente e capacidade de ordenar os clientes (top 20% de valor).
+    profile:
+      interpretability: média
+      skewed_target: true
+      goal: equilibrado
+    pitfalls:
+      - O alvo é muito assimétrico (poucos clientes valem muito) — considere transformação log.
+      - Clientes que saíram têm valor futuro 0 — decidir se se modela em duas fases (churn × valor).
+    powerbi_output:
+      table: Previsoes_CLV
+      columns: [cliente_id, valor_previsto_12m, decil_valor, versao_modelo]
+      visuals:
+        - Distribuição do valor previsto por decil
+        - Matriz valor previsto × risco de churn (quadrantes)
+      measures:
+        - name: Valor Futuro Total
+          dax: "Valor Futuro Total = SUM(Previsoes_CLV[valor_previsto_12m])"
+    ai_act_risk: mínimo
+    sensitive_attributes: [genero, idade]
+    terms: [clv, regressao, mae, transformacao_log, assimetria]
+
+  - id: resposta_campanha
+    name: Propensão de resposta a campanha
+    area: marketing
+    areas: [marketing]
+    problem_type: binary_classification
+    maturity: intermédio
+    summary: Prever que clientes vão responder a uma campanha para enviar só a quem interessa.
+    business_question: Que clientes têm maior probabilidade de responder à próxima campanha?
+    decision: "Definir a lista de envio (ex.: top 30%) e o canal, maximizando o ROI da campanha."
+    unit: Cliente × campanha
+    target:
+      column: respondeu
+      definition: 1 se o cliente converteu na campanha (compra/adesão) dentro da janela da campanha.
+      positive_class: 1
+    horizon: Duração da campanha
+    typical_features:
+      - Resposta a campanhas anteriores
+      - Canal, hora e dia de envio
+      - Desconto oferecido
+      - RFM do cliente
+    data_requirements:
+      - Histórico de várias campanhas com resultados registados
+      - Idealmente um grupo de controlo aleatório para medir uplift
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Campanhas
+      target: respondeu
+      id_columns: [cliente_id]
+    recommended_models:
+      - model: lightgbm
+        why: Lida bem com o desequilíbrio (≈9% de resposta) e interações canal × segmento.
+      - model: logistic_regression
+        why: Coeficientes interpretáveis por canal e desconto.
+      - model: hist_gradient_boosting
+        why: Alternativa nativa do scikit-learn, sem dependências.
+    metrics:
+      primary: pr_auc
+      secondary: [roc_auc, lift_top_decile, precision]
+      business: ROI = (respostas × margem − envios × custo de envio) / custo.
+    profile:
+      interpretability: média
+      imbalance: forte
+      goal: performance
+    business_costs:
+      cost_fp: 0.8
+      cost_fn: 25
+      benefit_tp: 25
+      note: Custo de envio (0,8€) vs margem de uma resposta (25€).
+    pitfalls:
+      - Prever resposta ≠ prever o efeito da campanha (uplift). Clientes que comprariam de qualquer forma inflacionam o ROI.
+      - Usar features calculadas após o envio.
+    powerbi_output:
+      table: Propensao_Campanha
+      columns: [cliente_id, probabilidade, decil, incluir_envio, versao_modelo]
+      visuals:
+        - Curva de ganhos acumulados (lift chart)
+        - ROI simulado por % da base contactada
+      measures:
+        - name: Respostas Esperadas
+          dax: "Respostas Esperadas = SUM(Propensao_Campanha[probabilidade])"
+    ai_act_risk: mínimo
+    sensitive_attributes: [idade]
+    terms: [propensao, uplift, lift, curva_ganhos, pr_auc, grupo_controlo]
+
+  # ------------------------------------------------------------------ COMERCIAL
+  - id: previsao_vendas
+    name: Previsão de vendas
+    area: comercial
+    areas: [comercial, operacoes, financas]
+    problem_type: forecasting
+    maturity: intermédio
+    summary: Prever receita/unidades por loja e família de produto para as próximas semanas.
+    business_question: Quanto vamos vender nas próximas 4 semanas, por loja e família?
+    decision: Definir objetivos comerciais, planear stock e equipas, e antecipar desvios ao orçamento.
+    unit: Loja × família × dia
+    target:
+      column: receita
+      definition: Receita diária agregada por série (loja × família).
+    horizon: 28 dias
+    typical_features:
+      - Histórico da própria série (lags e médias móveis)
+      - Calendário (dia da semana, mês, feriados)
+      - Promoções e descontos planeados
+      - Preço médio
+    data_requirements:
+      - Pelo menos 2 ciclos sazonais completos (2 anos para sazonalidade anual)
+      - Datas contínuas (sem buracos) por série
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-vendas
+      table: VendasDiarias
+      time_column: data
+      value_column: receita
+      series_columns: [loja]
+      freq: D
+      horizon: 28
+    recommended_models:
+      - model: gbm_lags
+        why: Modelo global que aprende com todas as séries e usa promoções/feriados.
+      - model: holt_winters
+        why: Captura tendência e sazonalidade semanal de forma robusta.
+      - model: seasonal_naive
+        why: Base obrigatória — qualquer modelo tem de a bater.
+      - model: sarima
+        why: Clássico estatístico com intervalos de confiança.
+    metrics:
+      primary: wape
+      secondary: [mae, bias, mase]
+      business: Erro em euros agregado por semana e enviesamento (sobre/subestimação).
+    profile:
+      seasonality: semanal e anual
+      goal: equilibrado
+    pitfalls:
+      - Validar com dados aleatórios em vez de backtesting temporal.
+      - Ignorar o efeito de promoções e feriados.
+      - Comparar modelos sem uma base naive sazonal.
+    powerbi_output:
+      table: Previsao_Vendas
+      columns: [data, serie, previsao, limite_inferior, limite_superior, modelo, versao_modelo]
+      visuals:
+        - Gráfico de linhas real vs previsto com banda de confiança
+        - Desvio previsão vs orçamento por loja
+      measures:
+        - name: Previsão Total
+          dax: "Previsão Total = SUM(Previsao_Vendas[previsao])"
+        - name: Desvio vs Orçamento
+          dax: "Desvio vs Orçamento = [Previsão Total] - SUM(Orcamento[valor])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [serie_temporal, sazonalidade, backtesting, wape, naive_sazonal, horizonte_previsao, lag]
+
+  - id: lead_scoring
+    name: Lead scoring (probabilidade de conversão)
+    area: comercial
+    areas: [comercial, marketing]
+    problem_type: binary_classification
+    maturity: básico
+    summary: Priorizar leads com maior probabilidade de se tornarem clientes.
+    business_question: Em que leads deve a equipa comercial investir tempo primeiro?
+    decision: Ordenar a fila de leads e atribuir os melhores aos comerciais com mais capacidade.
+    unit: Lead
+    target:
+      column: converteu
+      definition: 1 se o lead originou um contrato/venda em até 90 dias.
+      positive_class: 1
+    horizon: 90 dias
+    typical_features:
+      - Origem do lead e setor
+      - Dimensão da empresa e cargo do contacto
+      - Envolvimento (emails abertos, visitas ao site, pedido de demo)
+      - Tempo até ao primeiro contacto
+    data_requirements:
+      - Leads com resultado final conhecido (convertido / perdido)
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Leads
+      target: converteu
+      id_columns: [lead_id]
+    recommended_models:
+      - model: lightgbm
+        why: Bom desempenho com mistura de variáveis categóricas e numéricas.
+      - model: logistic_regression
+        why: Pontuação explicável que a equipa comercial entende.
+      - model: random_forest
+        why: Robusto e estável.
+    metrics:
+      primary: roc_auc
+      secondary: [pr_auc, lift_top_decile, precision]
+      business: Taxa de conversão nos leads priorizados vs média.
+    profile:
+      interpretability: alta
+      imbalance: moderado
+      goal: equilibrado
+    business_costs:
+      cost_fp: 40
+      cost_fn: 300
+      benefit_tp: 300
+      note: Custo de tempo comercial num lead (40€) vs margem média de um contrato (300€).
+    pitfalls:
+      - Leads ainda em aberto não podem entrar no treino como "não convertidos".
+      - O responsável comercial pode refletir política de atribuição e não qualidade do lead.
+    powerbi_output:
+      table: Lead_Score
+      columns: [lead_id, score, banda, principais_motivos, versao_modelo]
+      visuals:
+        - Funil por banda de score
+        - Tabela de leads priorizados por comercial
+      measures:
+        - name: Conversões Esperadas
+          dax: "Conversões Esperadas = SUM(Lead_Score[score])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [propensao, auc_roc, lift, limiar_decisao]
+
+  - id: cross_sell
+    name: Propensão a cross-sell
+    area: comercial
+    areas: [comercial, marketing]
+    problem_type: binary_classification
+    maturity: intermédio
+    summary: Identificar clientes com maior probabilidade de aderir a um produto adicional.
+    business_question: Que clientes vão aderir ao produto adicional se lhes for proposto?
+    decision: Selecionar clientes para ofertas de cross-sell e preparar o argumentário comercial.
+    unit: Cliente
+    target:
+      column: aderiu_cross_sell
+      definition: 1 se o cliente aderiu a um produto adicional nos 6 meses seguintes.
+      positive_class: 1
+    horizon: 6 meses
+    typical_features: [Produtos atuais, RFM, Plano, Utilização da app, Segmento]
+    data_requirements: [Histórico de adesões a produtos com data]
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-crm
+      table: Clientes
+      target: aderiu_cross_sell
+      id_columns: [cliente_id]
+      exclude: [churn, valor_futuro_12m]
+    recommended_models:
+      - model: lightgbm
+        why: Bom com desequilíbrio (≈12%) e interações.
+      - model: logistic_regression
+        why: Interpretável para o argumentário comercial.
+      - model: extra_trees
+        why: Alternativa rápida e com baixa variância.
+    metrics:
+      primary: pr_auc
+      secondary: [roc_auc, lift_top_decile]
+      business: Adesões incrementais por contacto realizado.
+    profile:
+      interpretability: média
+      imbalance: forte
+      goal: equilibrado
+    business_costs: {cost_fp: 5, cost_fn: 60, benefit_tp: 60}
+    pitfalls:
+      - Clientes que já têm o produto devem ser excluídos da população.
+    powerbi_output:
+      table: Propensao_CrossSell
+      columns: [cliente_id, probabilidade, decil, versao_modelo]
+      visuals: [Lift por decil, Lista de clientes priorizados]
+      measures:
+        - name: Adesões Esperadas
+          dax: "Adesões Esperadas = SUM(Propensao_CrossSell[probabilidade])"
+    ai_act_risk: mínimo
+    sensitive_attributes: [genero, idade]
+    terms: [propensao, pr_auc, desequilibrio_classes, lift]
+
+  - id: cabaz_compras
+    name: Análise de cabaz (regras de associação)
+    area: comercial
+    areas: [comercial, pricing, marketing]
+    problem_type: association_rules
+    maturity: básico
+    summary: Descobrir produtos comprados em conjunto para layout de loja, promoções e recomendações.
+    business_question: Que produtos são comprados em conjunto com mais frequência do que o acaso?
+    decision: Definir promoções cruzadas, disposição em loja e recomendações online.
+    unit: Talão (transação)
+    target:
+      column: null
+      definition: Sem alvo — procura padrões de co-ocorrência.
+    horizon: n/a
+    typical_features: [Identificador da transação, Produto ou categoria]
+    data_requirements:
+      - Tabela de linhas de venda com id de talão e produto
+      - Milhares de transações para regras fiáveis
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-vendas
+      table: LinhasTalao
+      transaction_column: talao_id
+      item_column: produto
+    recommended_models:
+      - model: apriori
+        why: Algoritmo clássico, transparente e suficiente para centenas de produtos.
+    metrics:
+      primary: lift
+      secondary: [support, confidence]
+      business: Aumento do ticket médio nas promoções cruzadas.
+    profile:
+      interpretability: alta
+      goal: interpretabilidade
+    pitfalls:
+      - Suporte mínimo demasiado baixo gera milhares de regras irrelevantes.
+      - Confiança alta com lift ≈ 1 não é associação real (o produto B é comprado por quase todos).
+    powerbi_output:
+      table: Regras_Associacao
+      columns: [antecedente, consequente, suporte, confianca, lift]
+      visuals: [Tabela de regras ordenada por lift, Matriz produto × produto]
+      measures:
+        - name: Nº de Regras Fortes
+          dax: "Regras Fortes = CALCULATE(COUNTROWS(Regras_Associacao), Regras_Associacao[lift] > 1.5)"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [regra_associacao, suporte, confianca, lift_associacao, apriori]
+
+  # ------------------------------------------------------------------ FINANÇAS
+  - id: atraso_pagamentos
+    name: Risco de atraso nos recebimentos
+    area: financas
+    areas: [financas, risco]
+    problem_type: binary_classification
+    maturity: intermédio
+    summary: Prever faturas que vão ser pagas com mais de 30 dias de atraso.
+    business_question: Que faturas emitidas vão ser pagas com atraso superior a 30 dias?
+    decision: Priorizar ações de cobrança preventiva e ajustar condições de crédito a clientes.
+    unit: Fatura na data de emissão
+    target:
+      column: atraso_superior_30d
+      definition: 1 se a fatura foi paga mais de 30 dias após o vencimento.
+      positive_class: 1
+    horizon: Até ao pagamento
+    typical_features:
+      - Histórico de atrasos do cliente
+      - Rating interno e antiguidade
+      - Valor e prazo da fatura
+      - Setor e região
+    data_requirements: [Faturas liquidadas com datas de vencimento e pagamento]
+    demo:
+      connector: demo
+      workspace: ws-financas
+      dataset: ds-financas
+      table: Faturas
+      target: atraso_superior_30d
+      id_columns: [fatura_id, cliente_id]
+      exclude: [dias_atraso]
+    recommended_models:
+      - model: lightgbm
+        why: Capta interações entre histórico do cliente e valor/prazo.
+      - model: logistic_regression
+        why: Interpretável para a equipa de crédito e cobranças.
+      - model: random_forest
+        why: Robusto a outliers de valor.
+    metrics:
+      primary: roc_auc
+      secondary: [recall, precision, pr_auc]
+      business: Redução do DSO e do valor em atraso.
+    profile:
+      interpretability: alta
+      imbalance: moderado
+      goal: equilibrado
+    business_costs: {cost_fp: 10, cost_fn: 150, benefit_tp: 100}
+    pitfalls:
+      - Incluir os dias de atraso efetivos (dias_atraso) como feature — é o próprio alvo.
+      - Faturas ainda em aberto não têm resultado conhecido.
+    powerbi_output:
+      table: Risco_Atraso_Faturas
+      columns: [fatura_id, cliente_id, probabilidade, banda_risco, valor, versao_modelo]
+      visuals: [Valor em risco por cliente, Aging previsto]
+      measures:
+        - name: Valor em Risco de Atraso
+          dax: "Valor em Risco = SUMX(Risco_Atraso_Faturas, Risco_Atraso_Faturas[probabilidade] * Risco_Atraso_Faturas[valor])"
+    ai_act_risk: limitado
+    sensitive_attributes: []
+    terms: [dso, data_leakage, auc_roc, matriz_custo_beneficio]
+
+  - id: previsao_tesouraria
+    name: Previsão de tesouraria (cash-flow)
+    area: financas
+    areas: [financas]
+    problem_type: forecasting
+    maturity: intermédio
+    summary: Prever recebimentos diários para planear necessidades de liquidez.
+    business_question: Quanto vamos receber por dia nas próximas 8 semanas?
+    decision: Planear financiamento de curto prazo e aplicações de excedentes.
+    unit: Dia
+    target:
+      column: recebimentos
+      definition: Total de recebimentos por dia útil.
+    horizon: 56 dias
+    typical_features: [Calendário (dia do mês, dia útil), Sazonalidade mensal, Feriados]
+    data_requirements: [Pelo menos 2 anos de movimentos diários]
+    demo:
+      connector: demo
+      workspace: ws-financas
+      dataset: ds-financas
+      table: FluxosCaixa
+      time_column: data
+      value_column: recebimentos
+      series_columns: []
+      freq: D
+      horizon: 56
+    recommended_models:
+      - model: gbm_lags
+        why: Captura efeitos de dia do mês (fim do mês, dia 20) com features de calendário.
+      - model: holt_winters
+        why: Base estatística com sazonalidade semanal.
+      - model: seasonal_naive
+        why: Base de comparação.
+    metrics:
+      primary: wape
+      secondary: [mae, bias]
+      business: Erro acumulado semanal em euros.
+    profile:
+      seasonality: semanal e mensal
+      goal: equilibrado
+    pitfalls:
+      - Fins de semana com zero recebimentos distorcem o MAPE (use WAPE).
+      - Grandes recebimentos pontuais (one-offs) devem ser tratados à parte.
+    powerbi_output:
+      table: Previsao_Tesouraria
+      columns: [data, previsao, limite_inferior, limite_superior, versao_modelo]
+      visuals: [Saldo projetado com banda de confiança]
+      measures:
+        - name: Recebimentos Previstos
+          dax: "Recebimentos Previstos = SUM(Previsao_Tesouraria[previsao])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [serie_temporal, wape, mape, sazonalidade, intervalo_previsao]
+
+  - id: anomalias_despesas
+    name: Deteção de anomalias em despesas
+    area: financas
+    areas: [financas, risco]
+    problem_type: anomaly_detection
+    maturity: intermédio
+    summary: Encontrar lançamentos de despesa invulgares para revisão por controlo de gestão/auditoria.
+    business_question: Que lançamentos de despesa fogem ao padrão habitual e merecem revisão?
+    decision: "Enviar os lançamentos mais anómalos para revisão manual (ex.: 1-2% por mês)."
+    unit: Lançamento contabilístico
+    target:
+      column: null
+      definition: Sem alvo; a coluna "anomalia" do demo serve apenas para validar.
+    horizon: n/a
+    typical_features: [Valor, Categoria, Centro de custo, Aprovador, Hora e dia do lançamento, Tempo de aprovação]
+    data_requirements: [Lançamentos com atributos de contexto]
+    demo:
+      connector: demo
+      workspace: ws-financas
+      dataset: ds-financas
+      table: Despesas
+      id_columns: [lancamento_id]
+      label_column: anomalia
+      exclude: [anomalia]
+    recommended_models:
+      - model: isolation_forest
+        why: Eficiente em muitas dimensões, não assume distribuições.
+      - model: local_outlier_factor
+        why: Deteta anomalias locais (normais no global, estranhas no seu grupo).
+      - model: robust_zscore
+        why: Regra simples e explicável por variável.
+    metrics:
+      primary: precision_at_k
+      secondary: [recall_at_k]
+      business: "% de lançamentos revistos que eram efetivamente irregulares."
+    profile:
+      interpretability: alta
+      expected_anomaly_rate: 0.02
+      goal: interpretabilidade
+    pitfalls:
+      - Anomalia ≠ fraude — é um sinal para revisão humana.
+      - Contaminação demasiado alta sobrecarrega a equipa de revisão.
+    powerbi_output:
+      table: Anomalias_Despesas
+      columns: [lancamento_id, score_anomalia, e_anomalia, motivos, versao_modelo]
+      visuals: [Lista de revisão priorizada, Anomalias por centro de custo]
+      measures:
+        - name: Lançamentos a Rever
+          dax: "Lançamentos a Rever = CALCULATE(COUNTROWS(Anomalias_Despesas), Anomalias_Despesas[e_anomalia] = TRUE())"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [anomalia, isolation_forest, contaminacao, human_in_the_loop]
+
+  # ------------------------------------------------------------------ RISCO
+  - id: risco_credito
+    name: Risco de incumprimento de crédito
+    area: risco
+    areas: [risco, financas]
+    problem_type: binary_classification
+    maturity: avançado
+    summary: Estimar a probabilidade de incumprimento (PD) de pedidos de crédito.
+    business_question: Qual a probabilidade de este pedido de crédito entrar em incumprimento em 12 meses?
+    decision: Aprovar, rejeitar ou ajustar condições (taxa, garantias) com base na PD.
+    unit: Pedido de crédito na data de decisão
+    target:
+      column: incumprimento
+      definition: 1 se houve atraso > 90 dias nos 12 meses após a concessão.
+      positive_class: 1
+    horizon: 12 meses
+    typical_features:
+      - Taxa de esforço e rendimento
+      - Histórico de crédito e incumprimentos anteriores
+      - Estabilidade de emprego
+      - Montante, prazo e finalidade
+    data_requirements:
+      - Apenas pedidos aprovados têm resultado (cuidado com o viés de rejeição)
+      - Documentação do modelo para auditoria e regulador
+    demo:
+      connector: demo
+      workspace: ws-financas
+      dataset: ds-risco
+      table: Credito
+      target: incumprimento
+      id_columns: [pedido_id]
+    recommended_models:
+      - model: logistic_regression
+        why: Padrão de mercado em scorecards — totalmente explicável e auditável.
+      - model: lightgbm
+        why: Maior poder preditivo; usar com explicabilidade e restrições monotónicas.
+      - model: hist_gradient_boosting
+        why: Alternativa sem dependências externas.
+    metrics:
+      primary: roc_auc
+      secondary: [pr_auc, brier, ks]
+      business: Perda esperada = PD × LGD × EAD; taxa de aprovação vs taxa de incumprimento.
+    profile:
+      interpretability: alta
+      imbalance: forte
+      regulated: true
+      goal: interpretabilidade
+    business_costs: {cost_fp: 300, cost_fn: 4000, benefit_tp: 4000}
+    pitfalls:
+      - Usar variáveis proibidas ou proxies de discriminação (género, nacionalidade).
+      - Ignorar o viés de rejeição (reject inference).
+      - Probabilidades mal calibradas tornam a PD inútil para pricing.
+    powerbi_output:
+      table: Score_Credito
+      columns: [pedido_id, pd, classe_risco, principais_motivos, versao_modelo]
+      visuals: [Distribuição por classe de risco, Taxa de aprovação simulada por limiar]
+      measures:
+        - name: PD Média
+          dax: "PD Média = AVERAGE(Score_Credito[pd])"
+        - name: Perda Esperada
+          dax: "Perda Esperada = SUMX(Score_Credito, Score_Credito[pd] * RELATED(Credito[montante]) * 0.45)"
+    ai_act_risk: alto
+    sensitive_attributes: [genero, idade, estado_civil]
+    terms: [pd, ks_estatistica, calibracao, ai_act, fairness, gini, brier_score]
+
+  - id: fraude_transacoes
+    name: Deteção de fraude em transações
+    area: risco
+    areas: [risco, financas]
+    problem_type: binary_classification
+    maturity: avançado
+    summary: Identificar transações fraudulentas com classes extremamente desequilibradas (~1%).
+    business_question: Que transações têm alta probabilidade de ser fraude e devem ser bloqueadas ou revistas?
+    decision: Bloquear automaticamente (risco muito alto) ou enviar para revisão (risco alto).
+    unit: Transação
+    target:
+      column: fraude
+      definition: 1 se a transação foi confirmada como fraudulenta.
+      positive_class: 1
+    horizon: Tempo real / quase real
+    typical_features:
+      - Desvio do montante face ao padrão do cliente
+      - Velocidade (nº de transações nas últimas 24h)
+      - Distância a casa, país, novo dispositivo
+      - Canal e categoria do comerciante
+    data_requirements:
+      - Rótulos de fraude confirmados (chargebacks, investigação)
+      - Ordem temporal preservada na validação
+    demo:
+      connector: demo
+      workspace: ws-financas
+      dataset: ds-risco
+      table: Transacoes
+      target: fraude
+      id_columns: [transacao_id]
+      time_column: data_hora
+    recommended_models:
+      - model: xgboost
+        why: Excelente em dados muito desequilibrados com scale_pos_weight.
+      - model: lightgbm
+        why: Rápido para grandes volumes de transações.
+      - model: isolation_forest
+        why: Complemento não supervisionado para fraude nova (sem rótulos).
+    metrics:
+      primary: pr_auc
+      secondary: [recall, precision, roc_auc]
+      business: Valor de fraude evitado − custo de revisão − fricção de clientes bloqueados.
+    profile:
+      interpretability: média
+      imbalance: extremo
+      goal: performance
+    business_costs: {cost_fp: 8, cost_fn: 450, benefit_tp: 450}
+    pitfalls:
+      - A accuracy é inútil (99% de accuracy dizendo "nunca é fraude").
+      - Validação aleatória sobrestima o desempenho — usar divisão temporal.
+      - Oversampling antes da divisão treino/teste contamina a avaliação.
+    powerbi_output:
+      table: Score_Fraude
+      columns: [transacao_id, probabilidade, acao_recomendada, principais_motivos, versao_modelo]
+      visuals: [Alertas por hora e canal, Precisão dos alertas ao longo do tempo]
+      measures:
+        - name: Alertas de Fraude
+          dax: "Alertas = CALCULATE(COUNTROWS(Score_Fraude), Score_Fraude[acao_recomendada] <> \"Aprovar\")"
+    ai_act_risk: limitado
+    sensitive_attributes: []
+    terms: [fraude, desequilibrio_classes, pr_auc, scale_pos_weight, validacao_temporal, recall]
+
+  # ------------------------------------------------------------------ OPERAÇÕES
+  - id: previsao_procura
+    name: Previsão de procura por produto
+    area: operacoes
+    areas: [operacoes, comercial]
+    problem_type: forecasting
+    maturity: intermédio
+    summary: Prever unidades vendidas por família/loja para planear reposição e compras.
+    business_question: Quantas unidades de cada família vamos vender por dia nas próximas 2 semanas?
+    decision: Definir quantidades de encomenda e alocação de stock.
+    unit: Família × loja × dia
+    target:
+      column: unidades
+      definition: Unidades vendidas por dia.
+    horizon: 14 dias
+    typical_features: [Lags e médias móveis, Promoções, Preço, Feriados, Temperatura]
+    data_requirements: [Histórico diário contínuo por série]
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-vendas
+      table: VendasDiarias
+      time_column: data
+      value_column: unidades
+      series_columns: [familia]
+      freq: D
+      horizon: 14
+    recommended_models:
+      - model: gbm_lags
+        why: Usa promoções, preços e calendário; aprende entre séries.
+      - model: holt_winters
+        why: Robusto por série.
+      - model: seasonal_naive
+        why: Base obrigatória.
+    metrics:
+      primary: wape
+      secondary: [bias, mae, mase]
+      business: Ruturas evitadas e redução de stock em excesso.
+    profile:
+      seasonality: semanal e anual
+      goal: performance
+    pitfalls:
+      - Vendas com rutura subestimam a procura real.
+      - Enviesamento sistemático (bias) é mais grave que erro aleatório para o stock.
+    powerbi_output:
+      table: Previsao_Procura
+      columns: [data, serie, previsao, limite_inferior, limite_superior, versao_modelo]
+      visuals: [Previsão vs stock disponível, Erro de previsão por família]
+      measures:
+        - name: Procura Prevista
+          dax: "Procura Prevista = SUM(Previsao_Procura[previsao])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [serie_temporal, wape, bias_previsao, lag, media_movel]
+
+  - id: rutura_stock
+    name: Previsão de rutura de stock
+    area: operacoes
+    areas: [operacoes, logistica]
+    problem_type: binary_classification
+    maturity: intermédio
+    summary: Antecipar ruturas de stock na próxima semana por loja/produto.
+    business_question: Que produtos vão entrar em rutura nos próximos 7 dias?
+    decision: Antecipar encomendas, transferências entre lojas ou trocar fornecedor.
+    unit: Produto × loja × dia
+    target:
+      column: rutura_proximos_7d
+      definition: 1 se o stock chegou a zero nos 7 dias seguintes.
+      positive_class: 1
+    horizon: 7 dias
+    typical_features: [Dias de cobertura, Procura e variabilidade, Lead time e fiabilidade do fornecedor, Promoções planeadas]
+    data_requirements: [Snapshots diários de stock e vendas]
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-vendas
+      table: Stock
+      target: rutura_proximos_7d
+      id_columns: [registo_id]
+    recommended_models:
+      - model: lightgbm
+        why: Capta o efeito combinado cobertura × lead time × promoção.
+      - model: random_forest
+        why: Robusto e estável.
+      - model: logistic_regression
+        why: Base interpretável.
+    metrics:
+      primary: recall
+      secondary: [precision, pr_auc, roc_auc]
+      business: Vendas perdidas evitadas vs custo de encomendas antecipadas.
+    profile:
+      interpretability: média
+      imbalance: moderado
+      goal: equilibrado
+    business_costs: {cost_fp: 20, cost_fn: 180, benefit_tp: 150}
+    pitfalls:
+      - Registos do mesmo produto em dias seguidos são muito correlacionados — dividir por tempo.
+    powerbi_output:
+      table: Alertas_Rutura
+      columns: [registo_id, loja, produto, probabilidade, acao_recomendada, versao_modelo]
+      visuals: [Mapa de lojas com alertas, Lista de produtos críticos]
+      measures:
+        - name: Alertas de Rutura
+          dax: "Alertas Rutura = CALCULATE(COUNTROWS(Alertas_Rutura), Alertas_Rutura[probabilidade] > 0.5)"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [recall, rutura, nivel_servico, validacao_temporal]
+
+  # ------------------------------------------------------------------ LOGÍSTICA
+  - id: atraso_entregas
+    name: Previsão de atrasos nas entregas
+    area: logistica
+    areas: [logistica, cliente]
+    problem_type: binary_classification
+    maturity: básico
+    summary: Prever que entregas vão chegar fora do prazo para agir proativamente.
+    business_question: Que entregas expedidas hoje vão chegar atrasadas?
+    decision: Mudar transportadora/serviço ou avisar o cliente com antecedência.
+    unit: Entrega na data de expedição
+    target:
+      column: atrasada
+      definition: 1 se a entrega chegou após a data prometida.
+      positive_class: 1
+    horizon: Até à entrega
+    typical_features: [Transportadora, Zona e distância, Peso/volume, Tipo de serviço, Meteorologia, Picos sazonais]
+    data_requirements: [Data prometida e data efetiva de entrega]
+    demo:
+      connector: demo
+      workspace: ws-operacoes
+      dataset: ds-logistica
+      table: Entregas
+      target: atrasada
+      id_columns: [entrega_id]
+      exclude: [dias_entrega]
+    recommended_models:
+      - model: lightgbm
+        why: Interações transportadora × zona × época.
+      - model: random_forest
+        why: Robusto.
+      - model: logistic_regression
+        why: Base interpretável.
+    metrics:
+      primary: roc_auc
+      secondary: [recall, precision]
+      business: Reclamações evitadas e custo de serviços expresso.
+    profile:
+      interpretability: média
+      imbalance: moderado
+      goal: equilibrado
+    business_costs: {cost_fp: 4, cost_fn: 30, benefit_tp: 20}
+    pitfalls:
+      - Usar os dias de entrega efetivos como feature (leakage).
+    powerbi_output:
+      table: Risco_Atraso_Entregas
+      columns: [entrega_id, probabilidade, banda_risco, versao_modelo]
+      visuals: [Risco por transportadora e zona, OTIF previsto]
+      measures:
+        - name: Entregas em Risco
+          dax: "Entregas em Risco = CALCULATE(COUNTROWS(Risco_Atraso_Entregas), Risco_Atraso_Entregas[banda_risco] = \"Alto\")"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [otif, auc_roc, data_leakage]
+
+  - id: tempo_entrega
+    name: Estimativa do tempo de entrega
+    area: logistica
+    areas: [logistica, cliente]
+    problem_type: regression
+    maturity: básico
+    summary: Estimar em quantos dias uma encomenda será entregue.
+    business_question: Quantos dias vai demorar esta entrega?
+    decision: Comunicar uma data de entrega realista ao cliente no momento da compra.
+    unit: Entrega
+    target:
+      column: dias_entrega
+      definition: Dias entre a expedição e a entrega efetiva.
+    horizon: n/a
+    typical_features: [Distância, Zona, Transportadora, Serviço, Dia da semana, Peso]
+    data_requirements: [Entregas concluídas]
+    demo:
+      connector: demo
+      workspace: ws-operacoes
+      dataset: ds-logistica
+      table: Entregas
+      target: dias_entrega
+      id_columns: [entrega_id]
+      exclude: [atrasada]
+    recommended_models:
+      - model: lightgbm
+        why: Bom desempenho em regressão tabular.
+      - model: hist_gradient_boosting
+        why: Alternativa nativa.
+      - model: ridge
+        why: Base linear.
+    metrics:
+      primary: mae
+      secondary: [rmse, r2]
+      business: "% de entregas dentro da data comunicada."
+    profile:
+      interpretability: média
+      goal: equilibrado
+    pitfalls:
+      - Erros assimétricos — atrasar a promessa é melhor que falhar; considere prever quantis.
+    powerbi_output:
+      table: Previsao_Tempo_Entrega
+      columns: [entrega_id, dias_previstos, versao_modelo]
+      visuals: [Erro médio por transportadora]
+      measures:
+        - name: Dias Previstos Médios
+          dax: "Dias Previstos = AVERAGE(Previsao_Tempo_Entrega[dias_previstos])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [regressao, mae, residuo, regressao_quantilica]
+
+  # ------------------------------------------------------------------ RH
+  - id: attrition
+    name: Risco de saída de colaboradores (attrition)
+    area: rh
+    areas: [rh]
+    problem_type: binary_classification
+    maturity: avançado
+    summary: Identificar fatores e colaboradores com risco de saída voluntária.
+    business_question: Que fatores explicam a saída voluntária e onde está o risco concentrado?
+    decision: Desenhar políticas de retenção (salário, progressão, teletrabalho) e conversas de carreira.
+    unit: Colaborador na data de corte
+    target:
+      column: saiu_12m
+      definition: 1 se o colaborador saiu voluntariamente nos 12 meses seguintes.
+      positive_class: 1
+    horizon: 12 meses
+    typical_features: [Rácio salário/mercado, Anos desde a última promoção, Satisfação, Horas extra, Distância a casa, Teletrabalho]
+    data_requirements: [Histórico de saídas voluntárias com motivo, Dados pseudonimizados]
+    demo:
+      connector: demo
+      workspace: ws-pessoas
+      dataset: ds-rh
+      table: Colaboradores
+      target: saiu_12m
+      id_columns: [colaborador_id]
+      exclude: [dias_ausencia_prox_trimestre]
+    recommended_models:
+      - model: logistic_regression
+        why: Fatores explicáveis — essencial em decisões sobre pessoas.
+      - model: random_forest
+        why: "Capta interações (ex.: horas extra × satisfação)."
+      - model: lightgbm
+        why: Melhor desempenho; usar sobretudo para análise de drivers agregados.
+    metrics:
+      primary: roc_auc
+      secondary: [recall, pr_auc]
+      business: Custo de substituição evitado (≈ 6 a 9 meses de salário por saída).
+    profile:
+      interpretability: alta
+      imbalance: moderado
+      regulated: true
+      goal: interpretabilidade
+    business_costs: {cost_fp: 200, cost_fn: 15000, benefit_tp: 7000}
+    pitfalls:
+      - Uso individual do score pode ser discriminatório — preferir análise agregada e políticas.
+      - Género, idade e estado civil não devem ser usados para decisões individuais.
+      - Sistema de alto risco segundo o AI Act (gestão de trabalhadores).
+    powerbi_output:
+      table: Risco_Attrition
+      columns: [departamento, nivel, risco_medio, n_colaboradores_risco_alto, principais_fatores]
+      visuals: [Risco médio por departamento (agregado), Principais drivers de saída]
+      measures:
+        - name: Risco Médio de Saída
+          dax: "Risco Médio = AVERAGE(Risco_Attrition[risco_medio])"
+    ai_act_risk: alto
+    sensitive_attributes: [genero, idade, estado_civil]
+    terms: [attrition, fairness, ai_act, rgpd, pseudonimizacao, importancia_features]
+
+  - id: absentismo
+    name: Previsão de absentismo
+    area: rh
+    areas: [rh, operacoes]
+    problem_type: regression
+    maturity: intermédio
+    summary: Estimar dias de ausência no próximo trimestre para planear substituições.
+    business_question: Quantos dias de ausência esperamos por equipa no próximo trimestre?
+    decision: Planear bolsas de substituição e reforços por departamento.
+    unit: Colaborador × trimestre
+    target:
+      column: dias_ausencia_prox_trimestre
+      definition: Dias de ausência no trimestre seguinte.
+    horizon: 3 meses
+    typical_features: [Faltas nos últimos 12 meses, Horas extra, Distância a casa, Satisfação, Função]
+    data_requirements: [Registos de assiduidade por colaborador]
+    demo:
+      connector: demo
+      workspace: ws-pessoas
+      dataset: ds-rh
+      table: Colaboradores
+      target: dias_ausencia_prox_trimestre
+      id_columns: [colaborador_id]
+      exclude: [saiu_12m]
+    recommended_models:
+      - model: lightgbm
+        why: Lida com a distribuição com muitos zeros e cauda longa.
+      - model: random_forest
+        why: Robusto.
+      - model: ridge
+        why: Base linear.
+    metrics:
+      primary: mae
+      secondary: [rmse, r2]
+      business: Erro agregado por equipa (o importante é o total por departamento).
+    profile:
+      interpretability: média
+      skewed_target: true
+      goal: equilibrado
+    pitfalls:
+      - Dados de saúde são categoria especial no RGPD — não usar motivos clínicos.
+    powerbi_output:
+      table: Previsao_Absentismo
+      columns: [departamento, dias_previstos, versao_modelo]
+      visuals: [Dias previstos por departamento vs capacidade]
+      measures:
+        - name: Dias de Ausência Previstos
+          dax: "Ausência Prevista = SUM(Previsao_Absentismo[dias_previstos])"
+    ai_act_risk: alto
+    sensitive_attributes: [genero, idade, estado_civil]
+    terms: [regressao, mae, rgpd, assimetria]
+
+  # ------------------------------------------------------------------ CLIENTE
+  - id: volume_tickets
+    name: Previsão do volume de contactos
+    area: cliente
+    areas: [cliente, operacoes]
+    problem_type: forecasting
+    maturity: básico
+    summary: Prever o nº de tickets/contactos por dia para dimensionar equipas.
+    business_question: Quantos contactos vamos receber por dia nas próximas 4 semanas?
+    decision: Dimensionar turnos e escalas do contact center.
+    unit: Dia
+    target:
+      column: ticket_id
+      definition: Contagem de tickets abertos por dia (agregação por contagem).
+    horizon: 28 dias
+    typical_features: [Dia da semana, Sazonalidade, Campanhas e faturação, Feriados]
+    data_requirements: [Tickets com data de abertura]
+    demo:
+      connector: demo
+      workspace: ws-pessoas
+      dataset: ds-cliente
+      table: Tickets
+      time_column: data_abertura
+      value_column: ticket_id
+      aggregation: count
+      series_columns: []
+      freq: D
+      horizon: 28
+    recommended_models:
+      - model: holt_winters
+        why: Forte sazonalidade semanal.
+      - model: gbm_lags
+        why: Incorpora calendário e eventos.
+      - model: seasonal_naive
+        why: Base de comparação.
+    metrics:
+      primary: wape
+      secondary: [mae, bias]
+      business: Nível de serviço (atendidas em < 60s) e custo de horas extra.
+    profile:
+      seasonality: semanal
+      goal: equilibrado
+    pitfalls:
+      - Picos causados por incidentes devem ser marcados como eventos.
+    powerbi_output:
+      table: Previsao_Contactos
+      columns: [data, previsao, limite_inferior, limite_superior, versao_modelo]
+      visuals: [Previsão vs capacidade planeada]
+      measures:
+        - name: Contactos Previstos
+          dax: "Contactos Previstos = SUM(Previsao_Contactos[previsao])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [serie_temporal, sazonalidade, wape, intervalo_previsao]
+
+  - id: tempo_resolucao
+    name: Tempo de resolução de tickets
+    area: cliente
+    areas: [cliente]
+    problem_type: regression
+    maturity: intermédio
+    summary: Estimar o tempo de resolução de cada ticket à entrada.
+    business_question: Quanto tempo vai demorar a resolver este ticket?
+    decision: Priorizar e encaminhar tickets e informar o cliente.
+    unit: Ticket
+    target:
+      column: tempo_resolucao_horas
+      definition: Horas entre a abertura e a resolução.
+    horizon: n/a
+    typical_features: [Categoria, Prioridade, Canal, Segmento, Nível do agente]
+    data_requirements: [Tickets fechados]
+    demo:
+      connector: demo
+      workspace: ws-pessoas
+      dataset: ds-cliente
+      table: Tickets
+      target: tempo_resolucao_horas
+      id_columns: [ticket_id]
+      exclude: [escalado, reaberto, n_interacoes]
+    recommended_models:
+      - model: lightgbm
+        why: Alvo assimétrico e interações categoria × prioridade.
+      - model: random_forest
+        why: Robusto.
+      - model: ridge
+        why: Base.
+    metrics:
+      primary: mae
+      secondary: [rmse, r2]
+      business: Cumprimento de SLA.
+    profile:
+      interpretability: média
+      skewed_target: true
+      goal: equilibrado
+    pitfalls:
+      - Variáveis conhecidas só no fecho (reaberto, nº de interações) causam leakage.
+    powerbi_output:
+      table: Previsao_Resolucao
+      columns: [ticket_id, horas_previstas, risco_sla, versao_modelo]
+      visuals: [Tickets em risco de SLA]
+      measures:
+        - name: Tickets em Risco SLA
+          dax: "Risco SLA = CALCULATE(COUNTROWS(Previsao_Resolucao), Previsao_Resolucao[risco_sla] = TRUE())"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [regressao, mae, data_leakage, sla]
+
+  - id: drivers_nps
+    name: Drivers de satisfação (NPS)
+    area: cliente
+    areas: [cliente, marketing]
+    problem_type: multiclass_classification
+    maturity: intermédio
+    summary: Perceber o que distingue promotores, passivos e detratores.
+    business_question: Que fatores mais influenciam um cliente a ser detrator ou promotor?
+    decision: Priorizar investimentos nos drivers com maior impacto no NPS.
+    unit: Resposta ao inquérito
+    target:
+      column: categoria_nps
+      definition: Promotor (9-10), Passivo (7-8), Detrator (0-6).
+    horizon: n/a
+    typical_features: [Avaliações de atributos (preço, qualidade, atendimento, app), Contactos ao apoio, Problemas de faturação, Avarias]
+    data_requirements: [Inquéritos ligados a dados operacionais do cliente]
+    demo:
+      connector: demo
+      workspace: ws-pessoas
+      dataset: ds-cliente
+      table: NPS
+      target: categoria_nps
+      id_columns: [resposta_id, cliente_id]
+      exclude: [nota_nps]
+    recommended_models:
+      - model: random_forest
+        why: Importância de drivers estável.
+      - model: logistic_regression
+        why: Efeitos diretos e interpretáveis por driver.
+      - model: lightgbm
+        why: Melhor desempenho.
+    metrics:
+      primary: f1_macro
+      secondary: [balanced_accuracy, accuracy]
+      business: Importância de cada driver e simulação de impacto no NPS.
+    profile:
+      interpretability: alta
+      goal: interpretabilidade
+    pitfalls:
+      - Incluir a nota NPS (0-10) como feature — define o próprio alvo.
+      - Correlação ≠ causalidade; validar drivers com testes/ações.
+    powerbi_output:
+      table: Drivers_NPS
+      columns: [driver, importancia, efeito]
+      visuals: [Barras de importância dos drivers, Matriz importância × desempenho]
+      measures:
+        - name: NPS
+          dax: "NPS = DIVIDE(CALCULATE(COUNTROWS(NPS), NPS[categoria_nps] = \"Promotor\") - CALCULATE(COUNTROWS(NPS), NPS[categoria_nps] = \"Detrator\"), COUNTROWS(NPS)) * 100"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [nps, importancia_features, f1_score, causalidade]
+
+  # ------------------------------------------------------------------ PRICING
+  - id: elasticidade_preco
+    name: Elasticidade preço-procura
+    area: pricing
+    areas: [pricing, comercial, operacoes]
+    problem_type: regression
+    maturity: avançado
+    summary: Estimar como as unidades vendidas reagem a variações de preço e promoções.
+    business_question: Quanto variam as vendas quando alteramos o preço em 1%?
+    decision: Definir preços e profundidade de descontos que maximizam margem.
+    unit: Loja × família × dia
+    target:
+      column: unidades
+      definition: Unidades vendidas por dia (modelação log-log para obter elasticidade).
+    horizon: n/a
+    typical_features: [Preço médio, Desconto, Promoção, Calendário, Família, Loja]
+    data_requirements: [Variação de preço suficiente no histórico]
+    demo:
+      connector: demo
+      workspace: ws-comercial
+      dataset: ds-vendas
+      table: VendasDiarias
+      target: unidades
+      id_columns: []
+      exclude: [receita]
+    recommended_models:
+      - model: ridge
+        why: Modelo log-log em que o coeficiente do log(preço) é a elasticidade.
+      - model: lightgbm
+        why: Captura efeitos não lineares; usar curvas de dependência parcial (PDP).
+      - model: elastic_net
+        why: Regularização com muitas variáveis de calendário.
+    metrics:
+      primary: mae
+      secondary: [r2, rmse]
+      business: Elasticidade por família e margem simulada por cenário de preço.
+    profile:
+      interpretability: alta
+      skewed_target: true
+      goal: interpretabilidade
+    pitfalls:
+      - Preço e promoção correlacionados — separar efeitos.
+      - Endogeneidade (preços baixos onde a procura já é baixa).
+    powerbi_output:
+      table: Elasticidades
+      columns: [familia, elasticidade, intervalo_confianca]
+      visuals: [Curva preço × procura simulada, Elasticidade por família]
+      measures:
+        - name: Elasticidade Média
+          dax: "Elasticidade Média = AVERAGE(Elasticidades[elasticidade])"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [elasticidade, transformacao_log, pdp, multicolinearidade, causalidade]
+
+  # ------------------------------------------------------------------ MANUTENÇÃO
+  - id: manutencao_preditiva
+    name: Manutenção preditiva
+    area: manutencao
+    areas: [manutencao, operacoes]
+    problem_type: binary_classification
+    maturity: avançado
+    summary: Prever falhas de equipamentos nos próximos 7 dias a partir de sensores.
+    business_question: Que equipamentos vão falhar nos próximos 7 dias?
+    decision: Agendar manutenção antes da falha, minimizando paragens não planeadas.
+    unit: Equipamento × leitura
+    target:
+      column: falha_7d
+      definition: 1 se o equipamento falhou nos 7 dias seguintes à leitura.
+      positive_class: 1
+    horizon: 7 dias
+    typical_features: [Temperatura, Vibração, Pressão, Horas desde a manutenção, Carga, Alarmes recentes]
+    data_requirements: [Telemetria com histórico de avarias datado]
+    demo:
+      connector: demo
+      workspace: ws-operacoes
+      dataset: ds-fabrica
+      table: Sensores
+      target: falha_7d
+      id_columns: [leitura_id]
+      time_column: data_hora
+      exclude: [anomalia]
+    recommended_models:
+      - model: lightgbm
+        why: Capta combinações de sinais (vibração alta + muitas horas sem manutenção).
+      - model: random_forest
+        why: Robusto a ruído de sensores.
+      - model: logistic_regression
+        why: Base interpretável.
+    metrics:
+      primary: recall
+      secondary: [precision, pr_auc]
+      business: Custo de paragem evitado − custo de intervenções antecipadas.
+    profile:
+      interpretability: média
+      imbalance: forte
+      goal: performance
+    business_costs: {cost_fp: 300, cost_fn: 6000, benefit_tp: 5000}
+    pitfalls:
+      - Leituras do mesmo equipamento no treino e no teste (fuga temporal) — dividir por tempo.
+    powerbi_output:
+      table: Risco_Falha
+      columns: [equipamento, probabilidade, acao_recomendada, principais_motivos, versao_modelo]
+      visuals: [Mapa de equipamentos por risco, Tendência de risco por linha]
+      measures:
+        - name: Equipamentos em Risco
+          dax: "Equipamentos em Risco = CALCULATE(DISTINCTCOUNT(Risco_Falha[equipamento]), Risco_Falha[probabilidade] > 0.5)"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [manutencao_preditiva, recall, validacao_temporal, desequilibrio_classes]
+
+  - id: anomalias_sensores
+    name: Anomalias em sensores
+    area: manutencao
+    areas: [manutencao]
+    problem_type: anomaly_detection
+    maturity: intermédio
+    summary: Detetar leituras de sensores anómalas para investigação precoce.
+    business_question: Que leituras fogem ao comportamento normal do equipamento?
+    decision: Abrir ordens de inspeção para as leituras mais anómalas.
+    unit: Leitura
+    target:
+      column: null
+      definition: Sem alvo; "anomalia" no demo serve para validar.
+    horizon: n/a
+    typical_features: [Temperatura, Vibração, Pressão, Rotação, Consumo de energia]
+    data_requirements: [Leituras em operação normal suficientes]
+    demo:
+      connector: demo
+      workspace: ws-operacoes
+      dataset: ds-fabrica
+      table: Sensores
+      id_columns: [leitura_id]
+      label_column: anomalia
+      exclude: [falha_7d, anomalia]
+    recommended_models:
+      - model: isolation_forest
+        why: Escalável e sem suposições de distribuição.
+      - model: local_outlier_factor
+        why: Anomalias relativas ao tipo de equipamento.
+      - model: robust_zscore
+        why: Simples e explicável por sensor.
+    metrics:
+      primary: precision_at_k
+      secondary: [recall_at_k]
+      business: Inspeções úteis / inspeções totais.
+    profile:
+      interpretability: alta
+      expected_anomaly_rate: 0.03
+      goal: interpretabilidade
+    pitfalls:
+      - Comparar equipamentos de tipos diferentes na mesma escala.
+    powerbi_output:
+      table: Anomalias_Sensores
+      columns: [leitura_id, equipamento, score_anomalia, e_anomalia, motivos, versao_modelo]
+      visuals: [Linha temporal com anomalias destacadas]
+      measures:
+        - name: Leituras Anómalas
+          dax: "Leituras Anómalas = CALCULATE(COUNTROWS(Anomalias_Sensores), Anomalias_Sensores[e_anomalia] = TRUE())"
+    ai_act_risk: mínimo
+    sensitive_attributes: []
+    terms: [anomalia, isolation_forest, lof, contaminacao]

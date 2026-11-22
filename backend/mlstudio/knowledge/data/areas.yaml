@@ -1,0 +1,208 @@
+# Áreas de negócio suportadas pela plataforma.
+# Cada área agrupa casos de uso (use_cases.yaml) e define o contexto que os
+# agentes usam para especializar recomendações (KPIs, fontes típicas, riscos).
+areas:
+  - id: comercial
+    name: Comercial & Vendas
+    icon: trending-up
+    color: "#2563eb"
+    description: >-
+      Previsão de vendas, priorização de oportunidades e análise de cabaz para
+      aumentar receita e eficiência da força de vendas.
+    kpis: [Receita, Volume de vendas, Taxa de conversão, Ticket médio, Margem]
+    typical_sources:
+      - Modelo semântico de vendas (faturação, linhas de venda, calendário)
+      - CRM (oportunidades, leads, atividades comerciais)
+      - Catálogo de produtos e hierarquias
+    stakeholders: [Direção Comercial, Key Account Managers, Planeamento Comercial]
+    decisions:
+      - Definir objetivos e quotas de vendas
+      - Priorizar leads e oportunidades
+      - Desenhar ações de cross-sell e promoções
+    risks:
+      - Sazonalidade e promoções distorcem padrões históricos
+      - Dados de CRM com preenchimento manual e inconsistente
+
+  - id: marketing
+    name: Marketing & CRM
+    icon: megaphone
+    color: "#db2777"
+    description: >-
+      Retenção, segmentação, valor de cliente e propensão de resposta a
+      campanhas para alocar orçamento de marketing onde gera mais retorno.
+    kpis: [Taxa de churn, CLV, Taxa de resposta, ROI de campanha, Custo de aquisição]
+    typical_sources:
+      - Base de clientes e contratos
+      - Histórico de transações e interações
+      - Resultados de campanhas (enviados, abertos, convertidos)
+    stakeholders: [Direção de Marketing, Equipa de CRM, Customer Success]
+    decisions:
+      - Selecionar clientes para campanhas de retenção
+      - Personalizar ofertas por segmento
+      - Alocar orçamento por canal e segmento
+    risks:
+      - Efeito de campanhas anteriores contamina o histórico (viés de seleção)
+      - Medir resultado sem grupo de controlo leva a conclusões erradas
+
+  - id: financas
+    name: Finanças & Controlo de Gestão
+    icon: landmark
+    color: "#059669"
+    description: >-
+      Previsão de tesouraria, risco de atraso nos recebimentos e deteção de
+      anomalias em lançamentos e despesas.
+    kpis: [Cash-flow, DSO (prazo médio de recebimento), Desvio orçamental, Custos operacionais]
+    typical_sources:
+      - Contas a receber / faturas em aberto
+      - Movimentos de tesouraria e bancos
+      - Lançamentos contabilísticos e centros de custo
+    stakeholders: [CFO, Controlo de Gestão, Tesouraria, Crédito e Cobranças]
+    decisions:
+      - Planear necessidades de tesouraria
+      - Priorizar ações de cobrança
+      - Investigar lançamentos anómalos
+    risks:
+      - Fecho de mês e eventos contabilísticos geram picos atípicos
+      - Mudanças de plano de contas quebram séries históricas
+
+  - id: risco
+    name: Risco, Crédito & Compliance
+    icon: shield-alert
+    color: "#dc2626"
+    description: >-
+      Modelos de risco de incumprimento e deteção de fraude com requisitos
+      fortes de explicabilidade, equidade e conformidade regulatória.
+    kpis: [Taxa de incumprimento, Perda esperada, Taxa de fraude detetada, Falsos alarmes]
+    typical_sources:
+      - Pedidos e contratos de crédito
+      - Histórico de pagamentos
+      - Transações (montante, canal, hora, localização)
+    stakeholders: [Gestão de Risco, Compliance, Auditoria Interna, DPO]
+    decisions:
+      - Aprovar / rejeitar / ajustar condições de crédito
+      - Bloquear ou rever transações suspeitas
+    risks:
+      - Classes extremamente desequilibradas (fraude < 1%)
+      - Sistemas de alto risco segundo o AI Act (scoring de crédito)
+      - Necessidade de explicar decisões ao cliente (RGPD art. 22)
+
+  - id: operacoes
+    name: Operações & Supply Chain
+    icon: boxes
+    color: "#d97706"
+    description: >-
+      Previsão de procura, ruturas de stock e elasticidade para planear
+      compras, produção e reposição.
+    kpis: [Nível de serviço, Ruturas, Rotação de stock, Erro de previsão (WAPE), Stock parado]
+    typical_sources:
+      - Vendas diárias por loja/produto
+      - Stock, encomendas e lead times de fornecedores
+      - Calendário promocional e feriados
+    stakeholders: [Supply Chain, Compras, Planeamento, Gestores de Categoria]
+    decisions:
+      - Quantidades a encomendar e quando
+      - Alocação de stock entre armazéns e lojas
+      - Planeamento de promoções
+    risks:
+      - Vendas perdidas por rutura escondem a verdadeira procura
+      - Muitos produtos com procura intermitente
+
+  - id: logistica
+    name: Logística & Distribuição
+    icon: truck
+    color: "#7c3aed"
+    description: >-
+      Previsão de atrasos e de tempos de entrega para melhorar o nível de
+      serviço e a comunicação com o cliente.
+    kpis: [Entregas a tempo (OTIF), Tempo médio de entrega, Custo por entrega]
+    typical_sources:
+      - Ordens de transporte e entregas
+      - Transportadoras, rotas e zonas
+      - Meteorologia e calendário
+    stakeholders: [Direção de Logística, Planeamento de Transportes, Apoio ao Cliente]
+    decisions:
+      - Escolher transportadora/rota
+      - Avisar proativamente clientes de atrasos
+    risks:
+      - Datas de entrega registadas com atraso no sistema
+      - Fatores externos (greves, meteorologia) não capturados
+
+  - id: rh
+    name: Recursos Humanos & Pessoas
+    icon: users
+    color: "#0891b2"
+    description: >-
+      Risco de saída de colaboradores e previsão de absentismo para apoiar
+      políticas de retenção e planeamento de equipas.
+    kpis: [Taxa de rotatividade, Absentismo, Tempo de preenchimento de vagas, eNPS]
+    typical_sources:
+      - Ficha de colaborador (antiguidade, função, departamento)
+      - Avaliações de desempenho e formação
+      - Registos de assiduidade e horas extra
+    stakeholders: [Direção de RH, Business Partners, Chefias]
+    decisions:
+      - Planos de retenção individuais e coletivos
+      - Planeamento de substituições e contratações
+    risks:
+      - Dados pessoais sensíveis (RGPD) e risco de discriminação
+      - Sistema de alto risco segundo o AI Act (gestão de trabalhadores)
+
+  - id: cliente
+    name: Apoio ao Cliente & Experiência
+    icon: headset
+    color: "#ea580c"
+    description: >-
+      Previsão do volume de contactos, tempos de resolução e drivers de
+      satisfação (NPS) para dimensionar equipas e melhorar a experiência.
+    kpis: [NPS, CSAT, Tempo médio de resolução, Volume de contactos, First Contact Resolution]
+    typical_sources:
+      - Tickets e contactos por canal
+      - Inquéritos de satisfação
+      - Interações e reclamações
+    stakeholders: [Direção de Clientes, Contact Center, Qualidade]
+    decisions:
+      - Dimensionar turnos e equipas
+      - Priorizar tickets e escalamentos
+      - Atacar os principais drivers de insatisfação
+    risks:
+      - Mudanças de categorização de tickets ao longo do tempo
+      - Respostas de inquéritos com viés de não-resposta
+
+  - id: pricing
+    name: Produto & Pricing
+    icon: tag
+    color: "#4f46e5"
+    description: >-
+      Elasticidade preço-procura e impacto de promoções para otimizar preços
+      e margens.
+    kpis: [Margem, Elasticidade, Receita por unidade, Uplift promocional]
+    typical_sources:
+      - Vendas por produto, preço e promoção
+      - Preços de concorrência
+      - Custos de produto
+    stakeholders: [Pricing, Gestores de Categoria, Direção Comercial]
+    decisions:
+      - Definir preços e descontos
+      - Escolher produtos e mecânicas promocionais
+    risks:
+      - Pouca variação de preço histórica impede estimar elasticidade
+      - Confusão entre efeito preço e efeito promoção/sazonalidade
+
+  - id: manutencao
+    name: Produção & Manutenção
+    icon: factory
+    color: "#475569"
+    description: >-
+      Manutenção preditiva e deteção de anomalias em sensores para reduzir
+      paragens não planeadas.
+    kpis: [Disponibilidade, MTBF, Paragens não planeadas, Custo de manutenção]
+    typical_sources:
+      - Telemetria de sensores (temperatura, vibração, pressão)
+      - Ordens de manutenção e histórico de avarias
+    stakeholders: [Direção de Produção, Manutenção, Qualidade]
+    decisions:
+      - Agendar intervenções preventivas
+      - Investigar comportamentos anómalos de equipamentos
+    risks:
+      - Poucas falhas registadas (eventos raros)
+      - Sensores descalibrados geram falsos alarmes

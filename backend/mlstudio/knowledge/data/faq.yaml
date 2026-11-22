@@ -1,0 +1,101 @@
+# Perguntas frequentes — usadas pelo assistente (também em modo offline).
+faq:
+  - q: Que modelo devo usar?
+    a: |
+      Depende do tipo de problema, do volume de dados e da necessidade de explicação.
+      Regra prática para dados tabulares de BI: compare sempre **um modelo
+      interpretável** (regressão logística/Ridge) com **um gradient boosting**
+      (LightGBM). O Agente de Seleção de Modelos ordena os candidatos para o seu
+      projeto e justifica cada escolha.
+    terms: [regressao_logistica, gradient_boosting, baseline]
+  - q: Quantos dados preciso para treinar um modelo?
+    a: |
+      Não há número mágico. Como referência: classificação — pelo menos algumas
+      centenas de casos positivos (idealmente > 500); regressão — alguns milhares de
+      linhas; previsão — pelo menos 2 ciclos sazonais completos. Com poucos dados,
+      prefira modelos simples e regularizados.
+    terms: [desequilibrio_classes, regularizacao, sazonalidade]
+  - q: O meu modelo tem AUC de 0,99. Está ótimo?
+    a: |
+      Em problemas de negócio, uma AUC acima de 0,97 é quase sempre sinal de
+      **data leakage** — uma variável que contém informação do resultado. Veja a
+      importância das variáveis: se uma domina, verifique se está disponível no
+      momento da previsão.
+    terms: [data_leakage, auc_roc, importancia_features]
+  - q: Qual a diferença entre precisão e recall?
+    a: |
+      **Precisão**: dos casos que o modelo sinalizou, quantos eram positivos.
+      **Recall**: dos positivos reais, quantos o modelo apanhou. Subir o limiar
+      aumenta a precisão e baixa o recall. Escolha o equilíbrio pelos custos de
+      negócio de cada erro.
+    terms: [precisao, recall, limiar_decisao, matriz_custo_beneficio]
+  - q: Como escolho o limiar de decisão?
+    a: |
+      Três abordagens: (1) maximizar o lucro com a matriz de custo-benefício
+      (o Agente de Avaliação faz isto automaticamente); (2) respeitar a capacidade
+      operacional (ex.: top 500 clientes); (3) garantir um recall mínimo
+      (ex.: detetar 80% das fraudes).
+    terms: [limiar_decisao, matriz_custo_beneficio, curva_ganhos]
+  - q: Como evito overfitting?
+    a: |
+      Use validação cruzada, limite a complexidade (max_depth, num_leaves,
+      min_samples_leaf), aumente a regularização, use early stopping no boosting e
+      reduza variáveis ruidosas. Compare sempre treino vs validação.
+    terms: [overfitting, validacao_cruzada, regularizacao, early_stopping]
+  - q: Como ligo a plataforma ao Power BI?
+    a: |
+      Através do conector interno (configurado em `MLSTUDIO_INTERNAL_CONNECTOR`) ou
+      da API REST oficial com um service principal. Na página **Dados (Power BI)**
+      escolha o conector, teste a ligação e navegue workspace → modelo semântico →
+      tabela.
+    terms: [conector_interno, api_execute_queries, service_principal]
+  - q: Como coloco as previsões num relatório Power BI?
+    a: |
+      No passo **Implementação**: promova o modelo, execute o scoring e publique a
+      tabela (via conector ou exportação). Depois relacione-a com a dimensão (ex.:
+      Clientes) pelo identificador e use as medidas DAX sugeridas.
+    terms: [scoring_batch, push_dataset, medida_dax]
+  - q: Que métrica uso para previsão de vendas?
+    a: |
+      **WAPE** como principal (robusta a zeros, ponderada pelo volume), **bias**
+      para detetar sobre/subestimação sistemática e **MASE** para comparar com o
+      naive sazonal.
+    terms: [wape, bias_previsao, mase]
+  - q: Quantos segmentos devo criar?
+    a: |
+      Use a silhueta e o método do cotovelo como guia, mas a decisão final é de
+      negócio: entre 3 e 7 segmentos é normalmente o máximo que uma equipa consegue
+      operacionalizar.
+    terms: [silhueta, cotovelo, clustering]
+  - q: Posso usar género ou idade no modelo?
+    a: |
+      Depende do caso e da legislação. Em crédito e RH (alto risco segundo o AI Act)
+      evite atributos sensíveis como features e audite a equidade com eles. Lembre-se
+      de que outras variáveis podem funcionar como proxy.
+    terms: [atributo_sensivel, fairness, ai_act, proxy_discriminacao]
+  - q: Quando devo re-treinar o modelo?
+    a: |
+      Periodicamente (ex.: trimestral) e sempre que o Agente de Monitorização
+      detetar drift significativo (PSI > 0,25) ou queda de desempenho real. O novo
+      modelo entra como challenger.
+    terms: [retreino, psi, drift_dados, champion_challenger]
+  - q: O que é a learning rate e que valor uso?
+    a: |
+      É o peso de cada nova árvore no boosting. Valores entre 0,02 e 0,1 são o ponto
+      de partida; quanto mais baixa, mais árvores são precisas (regra: metade da
+      learning rate → dobro das árvores). Com early stopping o nº de árvores ajusta-se.
+    terms: [learning_rate, n_estimators, early_stopping]
+  - q: Tenho classes muito desequilibradas. O que faço?
+    a: |
+      1) Métricas adequadas (PR-AUC, recall, precisão); 2) pesos de classe
+      (`class_weight`, `scale_pos_weight`); 3) limiar escolhido pelos custos;
+      4) validação estratificada; 5) recalibrar se precisar de probabilidades reais.
+    terms: [desequilibrio_classes, pr_auc, class_weight, scale_pos_weight]
+  - q: O que faz cada agente?
+    a: |
+      Cada componente de ML tem um agente especializado: Enquadramento, Dados Power BI,
+      Perfil, Qualidade, Features, Seleção de Modelos, Conselheiro de Hiperparâmetros,
+      Treino, Previsão, Segmentação, Anomalias, Cabaz, Avaliação, Explicabilidade,
+      Governança, Implementação, Monitorização, Relatórios, Guia e o Assistente.
+      Veja a página **Agentes**.
+    terms: [pipeline]

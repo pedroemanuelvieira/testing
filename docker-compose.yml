@@ -1,0 +1,17 @@
+services:
+  mlstudio:
+    build: .
+    image: bi-ml-studio:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      MLSTUDIO_HOME: /data
+    volumes:
+      - mlstudio-data:/data
+      # monte aqui o pacote do conector interno e aponte MLSTUDIO_INTERNAL_CONNECTOR_PATH=/opt/conector
+      # - /caminho/para/conector:/opt/conector:ro
+    restart: unless-stopped
+volumes:
+  mlstudio-data:

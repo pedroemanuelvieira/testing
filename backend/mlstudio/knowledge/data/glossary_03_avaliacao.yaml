@@ -1,0 +1,866 @@
+# Glossário — Métricas, Séries temporais, Não supervisionado
+terms:
+  # ================================================================ MÉTRICAS DE CLASSIFICAÇÃO
+  - id: matriz_confusao
+    term: Matriz de confusão
+    en: Confusion matrix
+    category: metricas_classificacao
+    level: básico
+    short: Tabela que cruza a classe real com a classe prevista.
+    definition: >-
+      Em classificação binária tem 4 células — Verdadeiros Positivos (VP),
+      Falsos Positivos (FP), Verdadeiros Negativos (VN) e Falsos Negativos
+      (FN). Todas as métricas de classificação derivam destas contagens, que
+      dependem do limiar escolhido.
+    example: "Em 1.000 clientes: VP=120, FP=80, FN=60, VN=740."
+    related: [precisao, recall, limiar_decisao, matriz_custo_beneficio]
+    steps: [avaliacao]
+
+  - id: falso_positivo
+    term: Falso positivo e falso negativo
+    en: False positive / false negative
+    category: metricas_classificacao
+    level: básico
+    short: FP — alarme indevido; FN — caso positivo que o modelo deixou escapar.
+    definition: Cada tipo de erro tem um custo de negócio diferente; é isso que determina o limiar ótimo.
+    example: "Fraude: FP = cliente legítimo bloqueado; FN = fraude não detetada."
+    related: [matriz_confusao, matriz_custo_beneficio]
+    steps: [avaliacao]
+
+  - id: accuracy
+    term: Accuracy (exatidão)
+    en: Accuracy
+    category: metricas_classificacao
+    level: básico
+    short: Percentagem de previsões corretas.
+    formula: (VP + VN) / Total
+    definition: Enganadora com classes desequilibradas — prever sempre "não fraude" dá 99% de accuracy com 1% de fraude.
+    example: 85% de accuracy num problema com 82% de negativos é praticamente igual à baseline.
+    pitfalls: [Nunca usar como métrica principal com desequilíbrio]
+    related: [balanced_accuracy, desequilibrio_classes]
+    steps: [avaliacao]
+
+  - id: balanced_accuracy
+    term: Balanced accuracy
+    en: Balanced accuracy
+    category: metricas_classificacao
+    level: intermédio
+    short: Média do recall de cada classe — robusta ao desequilíbrio.
+    formula: (Recall positivos + Especificidade) / 2
+    definition: Um classificador aleatório tem 0,5 em problemas binários, independentemente do desequilíbrio.
+    example: Balanced accuracy de 0,78.
+    related: [accuracy, recall, especificidade]
+    steps: [avaliacao]
+
+  - id: precisao
+    term: Precisão (precision)
+    en: Precision / positive predictive value
+    category: metricas_classificacao
+    level: básico
+    short: Dos casos que o modelo sinalizou como positivos, quantos o eram de facto.
+    formula: VP / (VP + FP)
+    definition: "Importa quando agir sobre um falso alarme é caro (ex.: revisão manual, bloqueio de cliente)."
+    example: Precisão de 40% → 4 em cada 10 alertas de fraude são fraude real.
+    related: [recall, f1_score, limiar_decisao]
+    steps: [avaliacao]
+
+  - id: recall
+    term: Recall (sensibilidade, taxa de deteção)
+    en: Recall / sensitivity / true positive rate
+    category: metricas_classificacao
+    level: básico
+    short: Dos casos positivos reais, quantos o modelo apanhou.
+    formula: VP / (VP + FN)
+    definition: Importa quando falhar um positivo é caro (fraude, falha de equipamento, rutura).
+    example: Recall de 75% → o modelo deteta 3 em cada 4 equipamentos que vão falhar.
+    related: [precisao, especificidade, f1_score]
+    steps: [avaliacao]
+
+  - id: especificidade
+    term: Especificidade
+    en: Specificity / true negative rate
+    category: metricas_classificacao
+    level: intermédio
+    short: Dos casos negativos reais, quantos o modelo classificou corretamente.
+    formula: VN / (VN + FP)
+    definition: Complementar da taxa de falsos positivos (FPR = 1 − especificidade).
+    example: Especificidade de 95% → 5% dos clientes legítimos geram alerta.
+    related: [recall, auc_roc]
+    steps: [avaliacao]
+
+  - id: f1_score
+    term: F1-score
+    en: F1 score
+    category: metricas_classificacao
+    level: intermédio
+    short: Média harmónica entre precisão e recall.
+    formula: F1 = 2 × Precisão × Recall / (Precisão + Recall)
+    definition: >-
+      Resume o equilíbrio precisão/recall num número. Em multiclasse,
+      F1-macro faz a média simples entre classes (dá peso igual às classes
+      raras) e F1-weighted pondera pela frequência.
+    example: Precisão 0,50 e recall 0,70 → F1 = 0,58.
+    related: [precisao, recall]
+    steps: [avaliacao]
+
+  - id: auc_roc
+    term: AUC-ROC
+    en: Area Under the ROC Curve
+    category: metricas_classificacao
+    level: intermédio
+    short: Probabilidade de o modelo dar um score maior a um positivo do que a um negativo escolhidos ao acaso.
+    definition: >-
+      Mede a capacidade de ordenar, independentemente do limiar. 0,5 =
+      aleatório; 0,7–0,8 = aceitável; 0,8–0,9 = bom; > 0,9 = excelente
+      (desconfiar de leakage em problemas de negócio). Com desequilíbrio
+      forte, complementar com PR-AUC.
+    example: AUC = 0,84 no modelo de churn.
+    related: [curva_roc, pr_auc, gini, ks_estatistica]
+    steps: [avaliacao]
+
+  - id: curva_roc
+    term: Curva ROC
+    en: ROC curve
+    category: metricas_classificacao
+    level: intermédio
+    short: Gráfico da taxa de verdadeiros positivos vs taxa de falsos positivos para todos os limiares.
+    definition: Quanto mais a curva se afasta da diagonal em direção ao canto superior esquerdo, melhor o modelo. A área sob a curva é a AUC.
+    example: No limiar 0,3 o modelo apanha 80% dos churners com 25% de falsos positivos.
+    related: [auc_roc, limiar_decisao]
+    steps: [avaliacao]
+
+  - id: pr_auc
+    term: PR-AUC (precisão média)
+    en: Precision-Recall AUC / Average Precision
+    category: metricas_classificacao
+    level: avançado
+    short: Área sob a curva precisão-recall — a métrica de referência com classes raras.
+    definition: >-
+      A baseline de um modelo aleatório é a taxa de positivos (ex.: 0,012 em
+      fraude), não 0,5. Muito mais sensível que a AUC-ROC à qualidade nos
+      casos de topo.
+    example: PR-AUC de 0,46 com 1,2% de fraude (≈ 38× melhor que aleatório).
+    related: [auc_roc, precisao, recall, desequilibrio_classes]
+    steps: [avaliacao]
+
+  - id: log_loss
+    term: Log loss (entropia cruzada)
+    en: Log loss / cross-entropy
+    category: metricas_classificacao
+    level: avançado
+    short: Penaliza probabilidades confiantes e erradas.
+    formula: −média[y·log(p) + (1−y)·log(1−p)]
+    definition: Avalia a qualidade das probabilidades e não só a ordenação. Quanto menor, melhor.
+    example: Log loss 0,32 vs 0,45 da baseline.
+    related: [brier_score, calibracao]
+    steps: [avaliacao]
+
+  - id: brier_score
+    term: Brier score
+    en: Brier score
+    category: metricas_classificacao
+    level: avançado
+    short: Erro quadrático médio das probabilidades previstas.
+    formula: média[(p − y)²]
+    definition: 0 é perfeito. Combina calibração e discriminação. Muito usado em risco de crédito.
+    example: Brier = 0,061 com taxa de incumprimento de 8%.
+    related: [calibracao, log_loss]
+    steps: [avaliacao]
+
+  - id: calibracao
+    term: Calibração de probabilidades
+    en: Probability calibration
+    category: metricas_classificacao
+    level: avançado
+    short: Grau em que as probabilidades previstas correspondem às frequências observadas.
+    definition: >-
+      Um modelo calibrado que prevê 20% deve acertar em ~20% desses casos. É
+      essencial quando a probabilidade é usada como valor (PD, receita
+      esperada). Pesos de classe e reamostragem descalibram — corrigir com
+      Platt scaling ou regressão isotónica.
+    example: Clientes com score 0,6–0,7 tiveram churn real de 64% → bem calibrado.
+    related: [probabilidade, brier_score, class_weight]
+    steps: [avaliacao]
+
+  - id: limiar_decisao
+    term: Limiar de decisão (threshold)
+    en: Decision threshold
+    category: metricas_classificacao
+    level: básico
+    short: Valor de probabilidade acima do qual se considera o caso positivo.
+    definition: >-
+      0,5 raramente é o ideal. O limiar deve ser escolhido pelo negócio —
+      maximizar o lucro da matriz de custo-benefício, respeitar uma
+      capacidade (ex.: só conseguimos contactar 500 clientes) ou garantir um
+      recall mínimo. O Agente de Avaliação calcula o limiar ótimo.
+    example: Limiar 0,28 maximiza o lucro esperado da campanha de retenção.
+    related: [matriz_custo_beneficio, precisao, recall, curva_roc]
+    steps: [avaliacao, implementacao]
+
+  - id: lift
+    term: Lift
+    en: Lift
+    category: metricas_classificacao
+    level: intermédio
+    short: Quantas vezes o modelo é melhor que uma seleção aleatória num grupo de topo.
+    formula: Lift(top k%) = taxa de positivos no top k% / taxa de positivos global
+    definition: Métrica muito intuitiva para marketing — "no top 10% o modelo encontra 3,4× mais churners do que ao acaso".
+    example: Lift no 1.º decil = 3,4.
+    related: [curva_ganhos, propensao]
+    steps: [avaliacao]
+
+  - id: curva_ganhos
+    term: Curva de ganhos acumulados
+    en: Cumulative gains chart
+    category: metricas_classificacao
+    level: intermédio
+    short: Percentagem de positivos captados ao contactar os x% de maior score.
+    definition: Permite responder a "se contactarmos 20% da base, quantos dos que iam sair apanhamos?".
+    example: Contactando 20% da base captam-se 55% dos churners.
+    related: [lift, propensao]
+    steps: [avaliacao]
+
+  - id: ks_estatistica
+    term: Estatística KS
+    en: Kolmogorov–Smirnov statistic
+    category: metricas_classificacao
+    level: avançado
+    short: Separação máxima entre as distribuições acumuladas de scores de positivos e negativos.
+    definition: Padrão em risco de crédito; valores > 0,4 são considerados bons. Também usada para detetar drift.
+    example: KS = 0,47 no scorecard.
+    related: [auc_roc, gini, teste_ks]
+    steps: [avaliacao]
+
+  - id: gini
+    term: Coeficiente de Gini (modelos)
+    en: Gini coefficient
+    category: metricas_classificacao
+    level: avançado
+    short: Métrica de discriminação usada em crédito — Gini = 2 × AUC − 1.
+    formula: Gini = 2 × AUC − 1
+    definition: Varia entre 0 (aleatório) e 1 (perfeito).
+    example: AUC 0,80 → Gini 0,60.
+    related: [auc_roc, ks_estatistica]
+    steps: [avaliacao]
+
+  - id: mcc
+    term: MCC (coeficiente de Matthews)
+    en: Matthews correlation coefficient
+    category: metricas_classificacao
+    level: avançado
+    short: Correlação entre classes reais e previstas, robusta ao desequilíbrio (−1 a 1).
+    definition: Usa as quatro células da matriz de confusão; útil para comparar modelos num limiar fixo.
+    example: MCC = 0,41.
+    related: [matriz_confusao, f1_score]
+    steps: [avaliacao]
+
+  - id: precision_at_k
+    term: Precisão no top-k (precision@k)
+    en: Precision at k
+    category: metricas_classificacao
+    level: intermédio
+    short: Proporção de casos positivos entre os k mais suspeitos/prováveis.
+    definition: Métrica natural quando a equipa só consegue rever k casos (alertas de fraude, anomalias).
+    example: Dos 100 lançamentos mais anómalos, 34 eram irregulares → precision@100 = 34%.
+    related: [precisao, anomalia, lift]
+    steps: [avaliacao]
+
+  # ================================================================ MÉTRICAS DE REGRESSÃO E PREVISÃO
+  - id: residuo
+    term: Resíduo (erro)
+    en: Residual
+    category: metricas_regressao
+    level: básico
+    short: Diferença entre o valor real e o previsto.
+    formula: e = y − ŷ
+    definition: "A análise de resíduos revela padrões que o modelo não captou (ex.: erros sistemáticos numa região)."
+    example: Previsto 3 dias, real 5 dias → resíduo +2.
+    related: [mae, rmse, bias_previsao]
+    steps: [avaliacao]
+
+  - id: mae
+    term: MAE (erro absoluto médio)
+    en: Mean Absolute Error
+    category: metricas_regressao
+    level: básico
+    short: Média dos erros em valor absoluto, na unidade do alvo.
+    formula: MAE = média(|y − ŷ|)
+    definition: Fácil de explicar ("erramos em média 1,2 dias"). Robusto a outliers face ao RMSE.
+    example: MAE de 85€ no valor futuro do cliente.
+    related: [rmse, wape, residuo]
+    steps: [avaliacao]
+
+  - id: rmse
+    term: RMSE (raiz do erro quadrático médio)
+    en: Root Mean Squared Error
+    category: metricas_regressao
+    level: básico
+    short: Raiz da média dos erros ao quadrado — penaliza mais os erros grandes.
+    formula: RMSE = √média((y − ŷ)²)
+    definition: Sempre ≥ MAE. Uma grande diferença entre RMSE e MAE indica erros grandes ocasionais.
+    example: RMSE 140€ vs MAE 85€ → alguns erros elevados.
+    related: [mae, mse]
+    steps: [avaliacao]
+
+  - id: mse
+    term: MSE (erro quadrático médio)
+    en: Mean Squared Error
+    category: metricas_regressao
+    level: intermédio
+    short: Média dos erros ao quadrado (unidade ao quadrado).
+    formula: MSE = média((y − ŷ)²)
+    definition: Função de perda usada no treino de muitos modelos; para comunicar prefira RMSE ou MAE.
+    example: MSE = 19.600 (€²).
+    related: [rmse]
+    steps: [avaliacao]
+
+  - id: r2
+    term: R² (coeficiente de determinação)
+    en: R-squared
+    category: metricas_regressao
+    level: básico
+    short: Proporção da variância do alvo explicada pelo modelo.
+    formula: R² = 1 − Σ(y − ŷ)² / Σ(y − média)²
+    definition: 1 = perfeito; 0 = igual a prever sempre a média; pode ser negativo se for pior que a média.
+    example: R² = 0,72 → o modelo explica 72% da variação do tempo de entrega.
+    related: [mae, rmse]
+    steps: [avaliacao]
+
+  - id: mape
+    term: MAPE (erro percentual absoluto médio)
+    en: Mean Absolute Percentage Error
+    category: metricas_regressao
+    level: intermédio
+    short: Média dos erros em percentagem do valor real.
+    formula: MAPE = média(|y − ŷ| / |y|) × 100
+    definition: Intuitivo mas explode com valores reais próximos de zero e penaliza mais a sobrestimação. Em séries com zeros use WAPE.
+    example: MAPE de 8% na previsão mensal de vendas.
+    pitfalls: [Indefinido quando o valor real é 0]
+    related: [wape, smape]
+    steps: [avaliacao]
+
+  - id: smape
+    term: sMAPE (MAPE simétrico)
+    en: Symmetric MAPE
+    category: metricas_regressao
+    level: avançado
+    short: Variante do MAPE que divide pela média de real e previsto.
+    formula: sMAPE = média(2|y − ŷ| / (|y| + |ŷ|)) × 100
+    definition: Limitado entre 0% e 200%; trata sobrestimação e subestimação de forma mais equilibrada.
+    example: sMAPE de 11%.
+    related: [mape, wape]
+    steps: [avaliacao]
+
+  - id: wape
+    term: WAPE (erro percentual absoluto ponderado)
+    en: Weighted Absolute Percentage Error
+    category: metricas_regressao
+    level: intermédio
+    short: Soma dos erros absolutos dividida pela soma dos valores reais.
+    formula: WAPE = Σ|y − ŷ| / Σ|y| × 100
+    definition: >-
+      A métrica recomendada para previsão de vendas/procura em BI — robusta a
+      zeros, ponderada pelo volume e fácil de comunicar ("erramos 9% do
+      volume total").
+    example: WAPE de 9,4% na previsão de vendas diárias por loja.
+    related: [mape, mae, bias_previsao]
+    steps: [avaliacao]
+
+  - id: mase
+    term: MASE (erro absoluto escalado)
+    en: Mean Absolute Scaled Error
+    category: metricas_regressao
+    level: avançado
+    short: MAE do modelo dividido pelo MAE do naive sazonal.
+    formula: MASE = MAE(modelo) / MAE(naive sazonal no treino)
+    definition: < 1 significa que o modelo bate a referência naive. Comparável entre séries de escalas diferentes.
+    example: MASE = 0,72 → 28% melhor que repetir a semana anterior.
+    related: [naive_sazonal, mae]
+    steps: [avaliacao]
+
+  - id: bias_previsao
+    term: Enviesamento da previsão (bias)
+    en: Forecast bias
+    category: metricas_regressao
+    level: intermédio
+    short: Tendência sistemática para sobrestimar ou subestimar.
+    formula: Bias = Σ(ŷ − y) / Σy × 100
+    definition: Um bias de +5% significa que, no total, se previu 5% acima do real. Para stocks, um enviesamento sistemático é pior que erro aleatório.
+    example: Bias de −7% nos Frescos → ruturas frequentes.
+    related: [wape, residuo]
+    steps: [avaliacao]
+
+  - id: intervalo_previsao
+    term: Intervalo de previsão
+    en: Prediction interval
+    category: metricas_regressao
+    level: intermédio
+    short: Intervalo onde se espera que o valor real caia com uma dada probabilidade.
+    definition: >-
+      Comunica a incerteza da previsão (ex.: 80%). O Agente de Previsão estima
+      intervalos a partir dos erros de backtesting. Úteis para stock de
+      segurança e cenários pessimista/otimista.
+    example: Vendas da semana 48 entre 182k€ e 214k€ (80%).
+    related: [intervalo_confianca, nivel_servico]
+    steps: [avaliacao, implementacao]
+
+  - id: regressao_quantilica
+    term: Regressão quantílica
+    en: Quantile regression
+    category: metricas_regressao
+    level: avançado
+    short: "Prevê um quantil (ex.: percentil 90) em vez da média."
+    definition: Útil quando os custos dos erros são assimétricos (prometer prazos de entrega, stock de segurança).
+    example: Prever o percentil 90 do tempo de entrega para comunicar uma data segura.
+    related: [intervalo_previsao]
+    steps: [modelos]
+
+  # ================================================================ SÉRIES TEMPORAIS
+  - id: serie_temporal
+    term: Série temporal
+    en: Time series
+    category: series_temporais
+    level: básico
+    short: Sequência de observações ordenadas no tempo com frequência regular.
+    definition: >-
+      Pode ser única (receita total) ou múltipla (uma por loja/produto). A
+      ordem temporal importa — o passado explica o futuro e nunca o
+      contrário.
+    example: Receita diária por loja nos últimos 2 anos.
+    related: [tendencia, sazonalidade, frequencia_temporal]
+    steps: [enquadramento, treino]
+
+  - id: frequencia_temporal
+    term: Frequência / granularidade temporal
+    en: Frequency
+    category: series_temporais
+    level: básico
+    short: Intervalo entre observações (diária, semanal, mensal).
+    definition: Deve coincidir com a decisão (planeamento semanal → previsão semanal). O agente deteta a frequência e agrega os dados.
+    example: Tickets agregados por dia.
+    related: [serie_temporal, sazonalidade]
+    steps: [dados]
+
+  - id: tendencia
+    term: Tendência
+    en: Trend
+    category: series_temporais
+    level: básico
+    short: Movimento de longo prazo da série (crescimento ou declínio).
+    definition: Pode ser aditiva (+X por período) ou multiplicativa (+X% por período).
+    example: Vendas online a crescer 1,5% ao mês.
+    related: [sazonalidade, decomposicao]
+    steps: [perfil, treino]
+
+  - id: sazonalidade
+    term: Sazonalidade
+    en: Seasonality
+    category: series_temporais
+    level: básico
+    short: Padrão que se repete em intervalos fixos (semana, mês, ano).
+    definition: >-
+      O comprimento da sazonalidade (m) é um hiperparâmetro central — diário
+      com padrão semanal → 7; mensal com padrão anual → 12; semanal com padrão
+      anual → 52.
+    example: Picos de vendas às sextas e sábados; pico de dezembro.
+    related: [tendencia, naive_sazonal, decomposicao]
+    steps: [perfil, parametros]
+
+  - id: decomposicao
+    term: Decomposição sazonal
+    en: Seasonal decomposition
+    category: series_temporais
+    level: intermédio
+    short: Separar a série em tendência, sazonalidade e resíduo.
+    definition: Ajuda a perceber a estrutura da série antes de modelar.
+    example: Receita = tendência + efeito semanal + ruído.
+    related: [tendencia, sazonalidade]
+    steps: [perfil]
+
+  - id: estacionariedade
+    term: Estacionariedade
+    en: Stationarity
+    category: series_temporais
+    level: avançado
+    short: Propriedades estatísticas (média, variância) constantes no tempo.
+    definition: Modelos ARIMA exigem séries estacionárias — obtidas por diferenciação (d, D).
+    example: Diferenciar a série de vendas remove a tendência.
+    related: [autocorrelacao, arima_termo]
+    steps: [parametros]
+
+  - id: autocorrelacao
+    term: Autocorrelação (ACF / PACF)
+    en: Autocorrelation
+    category: series_temporais
+    level: avançado
+    short: Correlação da série com ela própria desfasada no tempo.
+    definition: Picos de autocorrelação no lag 7 indicam sazonalidade semanal. Orienta a escolha de lags e das ordens ARIMA.
+    example: Autocorrelação de 0,82 no lag 7.
+    related: [lag, sazonalidade, arima_termo]
+    steps: [perfil, parametros]
+
+  - id: lag
+    term: Lag (desfasamento)
+    en: Lag
+    category: series_temporais
+    level: intermédio
+    short: Valor da série num período anterior, usado como variável.
+    definition: Lag 7 numa série diária = valor de há uma semana. Base dos modelos de ML para previsão. Só podem ser usados lags ≥ horizonte, ou previsão recursiva.
+    example: vendas_lag_7, vendas_lag_28.
+    related: [media_movel, autocorrelacao, modelo_global]
+    steps: [features, parametros]
+
+  - id: media_movel
+    term: Média móvel
+    en: Rolling / moving average
+    category: series_temporais
+    level: básico
+    short: Média dos últimos n períodos, que suaviza o ruído.
+    definition: Usada como variável (nível recente) e como técnica simples de previsão.
+    example: Média móvel de 28 dias das unidades vendidas.
+    related: [lag]
+    steps: [features]
+
+  - id: naive_sazonal
+    term: Naive sazonal
+    en: Seasonal naive
+    category: series_temporais
+    level: básico
+    short: Previsão = valor do mesmo período do ciclo anterior.
+    definition: Baseline obrigatória em previsão. Se o modelo não a bate, não acrescenta valor.
+    example: Prever a próxima segunda com o valor da segunda passada.
+    related: [baseline, mase]
+    steps: [treino, avaliacao]
+
+  - id: holt_winters_termo
+    term: Holt-Winters (suavização exponencial)
+    en: Holt-Winters / ETS
+    category: series_temporais
+    level: intermédio
+    short: Modelo que atualiza nível, tendência e sazonalidade dando mais peso ao recente.
+    definition: Robusto e interpretável para séries com padrões estáveis.
+    example: Holt-Winters aditivo com sazonalidade 7 para contactos diários.
+    related: [tendencia, sazonalidade]
+    steps: [modelos]
+
+  - id: arima_termo
+    term: ARIMA / SARIMA
+    en: (Seasonal) AutoRegressive Integrated Moving Average
+    category: series_temporais
+    level: avançado
+    short: Modelo estatístico baseado em autocorrelação, com diferenciação e componente sazonal.
+    definition: Ordens (p,d,q)(P,D,Q,s). Bom para séries mensais/semanais; mais lento e técnico.
+    example: SARIMA(1,1,1)(1,1,1,7).
+    related: [autocorrelacao, estacionariedade]
+    steps: [modelos]
+
+  - id: modelo_global
+    term: Modelo global (multi-série)
+    en: Global forecasting model
+    category: series_temporais
+    level: avançado
+    short: Um único modelo de ML treinado com todas as séries em simultâneo.
+    definition: Aprende padrões partilhados (promoções, calendário) e funciona bem em séries curtas. Base do modelo gbm_lags.
+    example: Um LightGBM para as 25 séries loja × família.
+    related: [lag, gradient_boosting]
+    steps: [modelos]
+
+  - id: horizonte_previsao
+    term: Horizonte de previsão
+    en: Forecast horizon
+    category: series_temporais
+    level: básico
+    short: Quantos períodos à frente se prevê.
+    definition: Definido pela decisão (lead time de encomenda, planeamento de turnos). O erro cresce com o horizonte.
+    example: Horizonte de 28 dias.
+    related: [backtesting, intervalo_previsao]
+    steps: [enquadramento]
+
+  - id: eventos_calendario
+    term: Eventos e feriados
+    en: Holidays / events
+    category: series_temporais
+    level: intermédio
+    short: Datas especiais que alteram o padrão (feriados, Black Friday, campanhas).
+    definition: Devem entrar como variáveis (0/1) em modelos de ML ou ser tratados à parte; caso contrário geram grandes erros nessas datas.
+    example: Feriado de 8 de dezembro reduz vendas em lojas de escritório.
+    related: [features_data, sazonalidade]
+    steps: [features]
+
+  - id: procura_intermitente
+    term: Procura intermitente
+    en: Intermittent demand
+    category: series_temporais
+    level: avançado
+    short: Séries com muitos períodos de zero (produtos de baixa rotação).
+    definition: Métodos clássicos falham; usar agregação temporal, modelos específicos (Croston) ou modelos globais.
+    example: Peça de reposição vendida 3 vezes por ano.
+    related: [serie_temporal, wape]
+    steps: [modelos]
+
+  # ================================================================ NÃO SUPERVISIONADO
+  - id: clustering
+    term: Clustering (segmentação)
+    en: Clustering
+    category: nao_supervisionado
+    level: básico
+    short: Agrupar registos semelhantes entre si e diferentes dos outros grupos.
+    definition: >-
+      Não existe resposta certa — o melhor clustering é o que gera segmentos
+      estáveis, distintos e acionáveis. As métricas (silhueta) ajudam a
+      escolher, mas a decisão final é de negócio.
+    example: 5 segmentos de clientes — Campeões, Leais, Em risco, Novos, Adormecidos.
+    related: [kmeans, silhueta, perfil_segmento]
+    steps: [treino]
+
+  - id: segmentacao_clientes_termo
+    term: Segmentação de clientes
+    en: Customer segmentation
+    category: nao_supervisionado
+    level: básico
+    short: Divisão da base de clientes em grupos homogéneos para ações diferenciadas.
+    definition: Pode ser por regras (RFM em quintis) ou por clustering. Deve ser revista periodicamente porque os clientes mudam de segmento.
+    example: Segmento "Alto valor / baixa recência" recebe programa de fidelização.
+    related: [clustering, rfm, perfil_segmento]
+    steps: [enquadramento]
+
+  - id: kmeans
+    term: K-Means
+    en: K-Means
+    category: nao_supervisionado
+    level: básico
+    short: Algoritmo que divide os dados em k grupos em torno de centróides.
+    definition: Exige normalização e escolha de k (silhueta/cotovelo). Sensível a outliers e assume grupos aproximadamente esféricos.
+    example: K-Means com k = 5 sobre RFM normalizado e transformado com log.
+    related: [centroide, silhueta, cotovelo, standardizacao]
+    steps: [treino]
+
+  - id: centroide
+    term: Centróide
+    en: Centroid
+    category: nao_supervisionado
+    level: básico
+    short: O "registo médio" de um segmento.
+    definition: Descreve o segmento — comparando o centróide com a média global percebe-se o que o distingue.
+    example: Centróide do segmento 2 — 45 compras/ano e 3.200€ de valor.
+    related: [kmeans, perfil_segmento]
+    steps: [treino]
+
+  - id: silhueta
+    term: Coeficiente de silhueta
+    en: Silhouette score
+    category: nao_supervisionado
+    level: intermédio
+    short: Mede quão bem cada ponto está no seu segmento face ao segmento vizinho (−1 a 1).
+    definition: "Acima de 0,5 — estrutura forte; 0,25 a 0,5 — razoável; abaixo de 0,25 — fraca. Usado para escolher k."
+    example: Silhueta máxima de 0,41 com k = 4.
+    related: [kmeans, cotovelo, davies_bouldin]
+    steps: [treino, avaliacao]
+
+  - id: cotovelo
+    term: Método do cotovelo
+    en: Elbow method
+    category: nao_supervisionado
+    level: intermédio
+    short: Escolher k no ponto em que adicionar segmentos deixa de reduzir muito a inércia.
+    definition: A inércia (soma das distâncias ao centróide) diminui sempre com k; procura-se o "cotovelo" do gráfico.
+    example: A inércia cai fortemente até k = 4 e depois estabiliza.
+    related: [silhueta, kmeans]
+    steps: [treino]
+
+  - id: davies_bouldin
+    term: Índice Davies-Bouldin / Calinski-Harabasz
+    en: Davies-Bouldin / Calinski-Harabasz index
+    category: nao_supervisionado
+    level: avançado
+    short: Métricas internas de qualidade de clustering (DB — menor é melhor; CH — maior é melhor).
+    definition: Complementam a silhueta na comparação de soluções.
+    example: DB = 0,92 para k = 4 vs 1,15 para k = 6.
+    related: [silhueta]
+    steps: [avaliacao]
+
+  - id: gmm_termo
+    term: Mistura gaussiana (GMM)
+    en: Gaussian Mixture Model
+    category: nao_supervisionado
+    level: avançado
+    short: Clustering probabilístico com segmentos elípticos de tamanhos diferentes.
+    definition: Dá a probabilidade de cada registo pertencer a cada segmento.
+    example: Cliente com 70% de pertença ao segmento "Leais" e 30% a "Em risco".
+    related: [kmeans, clustering]
+    steps: [modelos]
+
+  - id: dbscan_termo
+    term: DBSCAN
+    en: DBSCAN
+    category: nao_supervisionado
+    level: avançado
+    short: Clustering por densidade que identifica ruído e não exige k.
+    definition: Muito sensível a eps (raio). Útil para dados geográficos.
+    example: Zonas de entregas densas e pontos isolados.
+    related: [clustering, anomalia]
+    steps: [modelos]
+
+  - id: hierarquico_termo
+    term: Clustering hierárquico
+    en: Hierarchical clustering
+    category: nao_supervisionado
+    level: intermédio
+    short: Constrói uma árvore (dendrograma) de agrupamentos sucessivos.
+    definition: Permite escolher o nível de detalhe a posteriori. Não escala para bases muito grandes.
+    example: Corte do dendrograma em 6 segmentos.
+    related: [clustering]
+    steps: [modelos]
+
+  - id: distancia_euclidiana
+    term: Distância euclidiana
+    en: Euclidean distance
+    category: nao_supervisionado
+    level: intermédio
+    short: Distância "em linha reta" entre dois pontos no espaço das variáveis.
+    formula: d = √Σ(xᵢ − yᵢ)²
+    definition: Base de K-Means e KNN; por isso as variáveis têm de estar na mesma escala.
+    example: Sem normalização, o rendimento (milhares) domina a idade (dezenas).
+    related: [standardizacao, kmeans, knn_termo]
+    steps: [features]
+
+  - id: perfil_segmento
+    term: Perfil de segmento
+    en: Segment profile
+    category: nao_supervisionado
+    level: básico
+    short: Descrição de cada segmento pelas suas características médias face ao global.
+    definition: >-
+      O Agente de Segmentação calcula, para cada segmento, a média de cada
+      variável, o desvio face à média global (z-score) e propõe um nome
+      descritivo.
+    example: "Segmento 3 — \"Alto valor, compra frequente\": valor +1,8σ, frequência +1,5σ."
+    related: [centroide, clustering]
+    steps: [treino, explicabilidade]
+
+  - id: anomalia
+    term: Anomalia (outlier multivariado)
+    en: Anomaly
+    category: nao_supervisionado
+    level: básico
+    short: Observação rara que difere significativamente do padrão normal.
+    definition: >-
+      Pode ser um erro, uma fraude, uma avaria ou simplesmente um caso raro
+      legítimo. A deteção de anomalias prioriza casos para revisão humana.
+    example: Despesa de consultoria de 48.000€ lançada a um domingo às 23h.
+    related: [isolation_forest, lof, zscore_robusto, outlier]
+    steps: [treino]
+
+  - id: isolation_forest
+    term: Isolation Forest
+    en: Isolation Forest
+    category: nao_supervisionado
+    level: intermédio
+    short: Algoritmo que deteta anomalias por serem fáceis de isolar com divisões aleatórias.
+    definition: Escalável e eficaz em muitas dimensões. O hiperparâmetro principal é a contaminação.
+    example: Isolation Forest sinaliza 2% dos lançamentos.
+    related: [anomalia, contaminacao]
+    steps: [modelos]
+
+  - id: lof
+    term: LOF (Local Outlier Factor)
+    en: Local Outlier Factor
+    category: nao_supervisionado
+    level: avançado
+    short: Deteta pontos em zonas menos densas que as dos seus vizinhos.
+    definition: Capta anomalias locais — normais no global mas estranhas no seu contexto.
+    example: Temperatura normal para um compressor mas anómala para uma bomba.
+    related: [anomalia, isolation_forest]
+    steps: [modelos]
+
+  - id: contaminacao
+    term: Contaminação
+    en: Contamination
+    category: nao_supervisionado
+    level: intermédio
+    short: Proporção esperada de anomalias — define quantos casos são sinalizados.
+    definition: Escolha-a pela capacidade de revisão da equipa e pela taxa histórica conhecida, não por acaso.
+    example: A equipa revê 100 lançamentos/mês em 5.000 → contaminação 0,02.
+    related: [isolation_forest, precision_at_k]
+    steps: [parametros]
+
+  - id: zscore_robusto
+    term: Z-score robusto (MAD)
+    en: Robust z-score / MAD
+    category: nao_supervisionado
+    level: intermédio
+    short: Distância à mediana medida em desvios absolutos medianos.
+    formula: z = 0,6745 × (x − mediana) / MAD
+    definition: Robusto aos próprios outliers (ao contrário do z-score clássico). Limiar habitual 3,5.
+    example: Vibração com z robusto de 6,2 → muito anómala.
+    related: [outlier, anomalia]
+    steps: [qualidade, treino]
+
+  - id: regra_associacao
+    term: Regra de associação
+    en: Association rule
+    category: nao_supervisionado
+    level: básico
+    short: Padrão do tipo "quem compra A também compra B".
+    definition: Avaliada por suporte, confiança e lift. Base da análise de cabaz e de recomendações simples.
+    example: "{Massa} → {Molho de tomate} com confiança 46% e lift 3,1."
+    related: [suporte, confianca, lift_associacao, apriori]
+    steps: [treino]
+
+  - id: itemset
+    term: Itemset (conjunto de itens)
+    en: Itemset
+    category: nao_supervisionado
+    level: intermédio
+    short: Conjunto de produtos que aparecem juntos numa transação.
+    definition: Itemsets frequentes são os que ultrapassam o suporte mínimo.
+    example: "{Pão, Manteiga, Leite}."
+    related: [suporte, apriori]
+    steps: [treino]
+
+  - id: suporte
+    term: Suporte
+    en: Support
+    category: nao_supervisionado
+    level: básico
+    short: Percentagem de transações que contêm um conjunto de itens.
+    formula: suporte(A ∪ B) = transações com A e B / total de transações
+    definition: Mede a frequência — regras com suporte muito baixo podem ser acaso.
+    example: 3% dos talões contêm cerveja e batatas fritas.
+    related: [confianca, lift_associacao]
+    steps: [parametros]
+
+  - id: confianca
+    term: Confiança
+    en: Confidence
+    category: nao_supervisionado
+    level: básico
+    short: Probabilidade de comprar B dado que se comprou A.
+    formula: confiança(A → B) = suporte(A ∪ B) / suporte(A)
+    definition: Pode ser alta apenas porque B é muito popular — por isso olha-se também para o lift.
+    example: 40% de quem compra fraldas compra toalhitas.
+    related: [suporte, lift_associacao]
+    steps: [parametros]
+
+  - id: lift_associacao
+    term: Lift (regras de associação)
+    en: Lift
+    category: nao_supervisionado
+    level: intermédio
+    short: Quantas vezes a regra é mais provável do que se A e B fossem independentes.
+    formula: lift(A → B) = confiança(A → B) / suporte(B)
+    definition: Lift > 1 associação positiva; = 1 independência; < 1 associação negativa (substitutos).
+    example: Lift 3,1 → comprar massa triplica a probabilidade de comprar molho.
+    related: [confianca, suporte, lift]
+    steps: [avaliacao]
+
+  - id: apriori
+    term: Apriori
+    en: Apriori algorithm
+    category: nao_supervisionado
+    level: intermédio
+    short: Algoritmo clássico para encontrar itemsets frequentes e regras de associação.
+    definition: Explora o facto de qualquer subconjunto de um itemset frequente também ser frequente, cortando o espaço de pesquisa.
+    example: Apriori com suporte mínimo 1% sobre 6.000 talões.
+    related: [regra_associacao, itemset]
+    steps: [modelos]

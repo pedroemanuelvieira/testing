@@ -1,0 +1,1622 @@
+# Catálogo de modelos e hiperparâmetros.
+# O Agente Conselheiro de Hiperparâmetros usa estes metadados (intervalos,
+# efeitos, importância) em conjunto com regras dependentes dos dados e do caso
+# de uso para recomendar e validar valores.
+#
+# Campos de cada hiperparâmetro:
+#   type: int | float | choice | bool
+#   importance: alta | média | baixa  (prioridade de afinação)
+#   increase / decrease: efeito de subir / descer o valor
+#   search: espaço de pesquisa recomendado para tuning (low/high ou choices)
+models:
+  # =========================================================== LINEARES
+  - id: logistic_regression
+    name: Regressão Logística
+    family: linear
+    tasks: [binary_classification, multiclass_classification]
+    library: scikit-learn
+    description: >-
+      Modelo linear que estima a probabilidade da classe positiva através da
+      função logística. É o ponto de partida clássico e o padrão em scorecards
+      de crédito pela sua transparência.
+    how_it_works: >-
+      Calcula uma soma ponderada das variáveis (log-odds) e transforma-a numa
+      probabilidade entre 0 e 1. Cada coeficiente indica quanto a variável
+      aumenta ou diminui o risco, mantendo as restantes constantes.
+    strengths: [Muito interpretável, Rápido, Probabilidades bem calibradas, Pouco propenso a overfitting com regularização]
+    weaknesses: [Não capta interações nem não linearidades sem feature engineering, Sensível a escala e multicolinearidade]
+    when_to_use: Base obrigatória; contextos regulados; quando a explicação é tão importante como a precisão.
+    interpretability: 5
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: C
+        label: Inverso da regularização (C)
+        type: float
+        default: 1.0
+        min: 0.0001
+        max: 1000
+        log: true
+        importance: alta
+        description: Controla a força da regularização. C pequeno = coeficientes mais pequenos e modelo mais simples.
+        increase: Menos regularização → modelo mais flexível, risco de overfitting com muitas variáveis.
+        decrease: Mais regularização → coeficientes encolhidos, mais estável, risco de underfitting.
+        search: {low: 0.001, high: 100}
+        term: regularizacao
+      - name: penalty
+        label: Tipo de penalização
+        type: choice
+        default: l2
+        choices: [l2, l1, elasticnet]
+        importance: média
+        description: L2 encolhe todos os coeficientes; L1 pode anulá-los (seleção de variáveis); elasticnet combina ambos.
+        increase: n/a
+        decrease: n/a
+        search: {choices: [l2, l1]}
+        term: regularizacao
+      - name: l1_ratio
+        label: Proporção L1 (elasticnet)
+        type: float
+        default: 0.5
+        min: 0
+        max: 1
+        importance: baixa
+        description: Só usado com penalty=elasticnet. 0 = L2 puro; 1 = L1 puro.
+        increase: Mais variáveis anuladas (modelo mais esparso).
+        decrease: Comportamento mais próximo de L2.
+        search: {low: 0.1, high: 0.9}
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced]
+        importance: média
+        description: "'balanced' dá mais peso à classe minoritária — útil com desequilíbrio quando interessa o recall."
+        increase: n/a
+        decrease: n/a
+        search: {choices: [none, balanced]}
+        term: class_weight
+      - name: max_iter
+        label: Máximo de iterações
+        type: int
+        default: 1000
+        min: 100
+        max: 10000
+        importance: baixa
+        description: Iterações do otimizador. Aumentar se aparecer aviso de não convergência.
+        increase: Garante convergência; mais tempo.
+        decrease: Pode não convergir.
+
+  - id: linear_regression
+    name: Regressão Linear (OLS)
+    family: linear
+    tasks: [regression]
+    library: scikit-learn
+    description: Ajusta uma reta/hiperplano minimizando o erro quadrático. Base de referência para regressão.
+    how_it_works: Estima um coeficiente por variável; a previsão é a soma ponderada das variáveis mais uma constante.
+    strengths: [Totalmente interpretável, Instantâneo, Sem hiperparâmetros críticos]
+    weaknesses: [Sensível a outliers e multicolinearidade, Não capta não linearidades]
+    when_to_use: Base de comparação e quando a relação é aproximadamente linear.
+    interpretability: 5
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: fit_intercept
+        label: Incluir constante
+        type: bool
+        default: true
+        importance: baixa
+        description: Inclui o termo independente (valor base). Mantenha ativo salvo casos muito específicos.
+        increase: n/a
+        decrease: n/a
+
+  - id: ridge
+    name: Ridge (regressão L2)
+    family: linear
+    tasks: [regression]
+    library: scikit-learn
+    description: Regressão linear com penalização L2 que estabiliza coeficientes com variáveis correlacionadas.
+    how_it_works: Minimiza o erro quadrático mais alpha × soma dos coeficientes ao quadrado.
+    strengths: [Robusto a multicolinearidade, Interpretável, Muito rápido]
+    weaknesses: [Linear, Não faz seleção de variáveis]
+    when_to_use: Base linear sólida; modelos log-log de elasticidade.
+    interpretability: 5
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: alpha
+        label: Força da regularização (alpha)
+        type: float
+        default: 1.0
+        min: 0.0001
+        max: 1000
+        log: true
+        importance: alta
+        description: Quanto maior, mais os coeficientes são encolhidos para zero.
+        increase: Mais estável, menos variância, risco de underfitting.
+        decrease: Aproxima-se da regressão linear simples.
+        search: {low: 0.01, high: 100}
+        term: regularizacao
+
+  - id: lasso
+    name: Lasso (regressão L1)
+    family: linear
+    tasks: [regression]
+    library: scikit-learn
+    description: Regressão linear com penalização L1 que anula coeficientes de variáveis pouco úteis.
+    how_it_works: Minimiza o erro quadrático mais alpha × soma dos valores absolutos dos coeficientes.
+    strengths: [Seleção automática de variáveis, Interpretável]
+    weaknesses: [Instável com variáveis muito correlacionadas, Linear]
+    when_to_use: Muitas variáveis candidatas e desejo de um modelo esparso.
+    interpretability: 5
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: alpha
+        label: Força da regularização (alpha)
+        type: float
+        default: 0.1
+        min: 0.00001
+        max: 100
+        log: true
+        importance: alta
+        description: Quanto maior, mais coeficientes ficam exatamente a zero.
+        increase: Modelo mais esparso e simples.
+        decrease: Mais variáveis retidas.
+        search: {low: 0.0001, high: 10}
+        term: regularizacao
+
+  - id: elastic_net
+    name: Elastic Net
+    family: linear
+    tasks: [regression]
+    library: scikit-learn
+    description: Combina L1 e L2 — seleção de variáveis com estabilidade em grupos correlacionados.
+    how_it_works: Penalização = alpha × (l1_ratio × L1 + (1 − l1_ratio) × L2).
+    strengths: [Equilíbrio entre Lasso e Ridge, Interpretável]
+    weaknesses: [Dois hiperparâmetros a afinar, Linear]
+    when_to_use: "Muitas variáveis correlacionadas (ex.: calendário + preço + promoções)."
+    interpretability: 5
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: alpha
+        label: Força da regularização (alpha)
+        type: float
+        default: 0.1
+        min: 0.00001
+        max: 100
+        log: true
+        importance: alta
+        description: Força total da penalização.
+        increase: Mais simples/esparso.
+        decrease: Mais flexível.
+        search: {low: 0.0001, high: 10}
+        term: regularizacao
+      - name: l1_ratio
+        label: Proporção L1
+        type: float
+        default: 0.5
+        min: 0
+        max: 1
+        importance: média
+        description: 0 = Ridge, 1 = Lasso.
+        increase: Mais seleção de variáveis.
+        decrease: Mais estabilidade em grupos correlacionados.
+        search: {low: 0.1, high: 0.9}
+
+  # =========================================================== ÁRVORES
+  - id: decision_tree
+    name: Árvore de Decisão
+    family: tree
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Sequência de perguntas sim/não sobre as variáveis que divide os dados em grupos homogéneos.
+    how_it_works: Em cada nó escolhe a divisão que mais reduz a impureza (Gini/entropia ou erro quadrático).
+    strengths: [Regras legíveis, Capta não linearidades, Sem necessidade de escalar]
+    weaknesses: [Instável, Overfitting fácil se for profunda]
+    when_to_use: Explicar padrões ao negócio com regras; base para ensembles.
+    interpretability: 5
+    speed: 5
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: max_depth
+        label: Profundidade máxima
+        type: int
+        default: 5
+        min: 1
+        max: 30
+        importance: alta
+        description: Nº máximo de níveis de perguntas.
+        increase: Regras mais detalhadas, risco elevado de overfitting.
+        decrease: Regras simples e generalizáveis, risco de underfitting.
+        search: {low: 2, high: 12}
+        term: max_depth
+      - name: min_samples_leaf
+        label: Mínimo de registos por folha
+        type: int
+        default: 20
+        min: 1
+        max: 1000
+        log: true
+        importance: alta
+        description: Cada regra final tem de abranger pelo menos este nº de registos.
+        increase: Regras mais robustas (menos overfitting).
+        decrease: Regras para casos muito específicos.
+        search: {low: 5, high: 200}
+        term: min_samples_leaf
+      - name: criterion
+        label: Critério de divisão
+        type: choice
+        default: gini
+        choices: [gini, entropy, log_loss, squared_error, absolute_error]
+        importance: baixa
+        description: "Classificação: gini/entropy/log_loss. Regressão: squared_error/absolute_error."
+        increase: n/a
+        decrease: n/a
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced]
+        importance: média
+        description: Compensa classes desequilibradas (só classificação).
+        increase: n/a
+        decrease: n/a
+        term: class_weight
+      - name: ccp_alpha
+        label: Poda por complexidade (ccp_alpha)
+        type: float
+        default: 0.0
+        min: 0
+        max: 0.1
+        importance: baixa
+        description: Remove ramos que pouco melhoram o modelo.
+        increase: Árvore mais pequena.
+        decrease: Árvore maior.
+
+  - id: random_forest
+    name: Random Forest
+    family: tree_ensemble
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Média de muitas árvores treinadas em amostras e subconjuntos de variáveis diferentes (bagging).
+    how_it_works: >-
+      Cada árvore vê uma amostra bootstrap dos dados e, em cada divisão, um
+      subconjunto aleatório de variáveis. A média das árvores reduz a variância.
+    strengths: [Robusto com pouca afinação, Pouco sensível a outliers, Importância de variáveis estável]
+    weaknesses: [Modelos grandes (memória), Menos preciso que boosting bem afinado, Extrapola mal em regressão]
+    when_to_use: Excelente primeiro modelo não linear; dados ruidosos.
+    interpretability: 3
+    speed: 3
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 300
+        min: 10
+        max: 3000
+        log: true
+        importance: média
+        description: Mais árvores = previsões mais estáveis. Não causa overfitting, só custa tempo.
+        increase: Mais estável; mais tempo e memória; ganhos decrescentes acima de ~500.
+        decrease: Mais rápido mas instável.
+        search: {low: 200, high: 800}
+        term: n_estimators
+      - name: max_depth
+        label: Profundidade máxima
+        type: int
+        default: 0
+        min: 0
+        max: 50
+        importance: alta
+        description: 0 = sem limite. Limitar reduz overfitting em bases pequenas e o tamanho do modelo.
+        increase: Árvores mais complexas.
+        decrease: Árvores mais simples.
+        search: {low: 4, high: 24}
+        term: max_depth
+      - name: min_samples_leaf
+        label: Mínimo de registos por folha
+        type: int
+        default: 1
+        min: 1
+        max: 500
+        log: true
+        importance: alta
+        description: Suaviza as previsões; valores maiores reduzem overfitting e ruído.
+        increase: Mais suave/regularizado.
+        decrease: Mais detalhe (e ruído).
+        search: {low: 1, high: 50}
+        term: min_samples_leaf
+      - name: max_features
+        label: Variáveis por divisão
+        type: choice
+        default: sqrt
+        choices: [sqrt, log2, "0.3", "0.5", "1.0"]
+        importance: alta
+        description: Fração de variáveis consideradas em cada divisão — controla a diversidade das árvores.
+        increase: Árvores mais parecidas (menos diversidade), cada uma mais forte.
+        decrease: Mais diversidade e menor correlação entre árvores.
+        search: {choices: [sqrt, "0.3", "0.5"]}
+        term: max_features
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced, balanced_subsample]
+        importance: média
+        description: Compensa desequilíbrio de classes (só classificação).
+        increase: n/a
+        decrease: n/a
+        search: {choices: [none, balanced_subsample]}
+        term: class_weight
+      - name: bootstrap
+        label: Amostragem bootstrap
+        type: bool
+        default: true
+        importance: baixa
+        description: Cada árvore treina numa amostra com reposição.
+        increase: n/a
+        decrease: n/a
+
+  - id: extra_trees
+    name: Extra Trees
+    family: tree_ensemble
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Variante do Random Forest com divisões escolhidas aleatoriamente — mais rápido e com menor variância.
+    how_it_works: Como o Random Forest, mas os pontos de corte são sorteados em vez de otimizados.
+    strengths: [Muito rápido, Baixa variância, Bom com variáveis ruidosas]
+    weaknesses: [Ligeiramente mais enviesado, Modelos grandes]
+    when_to_use: Alternativa rápida ao Random Forest.
+    interpretability: 3
+    speed: 4
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 300
+        min: 10
+        max: 3000
+        log: true
+        importance: média
+        description: Mais árvores = mais estável.
+        increase: Mais estável, mais tempo.
+        decrease: Mais rápido, instável.
+        search: {low: 200, high: 800}
+        term: n_estimators
+      - name: max_depth
+        label: Profundidade máxima
+        type: int
+        default: 0
+        min: 0
+        max: 50
+        importance: alta
+        description: 0 = sem limite.
+        increase: Mais complexo.
+        decrease: Mais simples.
+        search: {low: 4, high: 24}
+        term: max_depth
+      - name: min_samples_leaf
+        label: Mínimo de registos por folha
+        type: int
+        default: 1
+        min: 1
+        max: 500
+        log: true
+        importance: alta
+        description: Suavização das folhas.
+        increase: Mais regularizado.
+        decrease: Mais detalhe.
+        search: {low: 1, high: 50}
+        term: min_samples_leaf
+      - name: max_features
+        label: Variáveis por divisão
+        type: choice
+        default: sqrt
+        choices: [sqrt, log2, "0.3", "0.5", "1.0"]
+        importance: alta
+        description: Fração de variáveis por divisão.
+        increase: Menos diversidade.
+        decrease: Mais diversidade.
+        search: {choices: [sqrt, "0.5", "1.0"]}
+        term: max_features
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced, balanced_subsample]
+        importance: média
+        description: Compensa desequilíbrio (só classificação).
+        increase: n/a
+        decrease: n/a
+        term: class_weight
+
+  # =========================================================== BOOSTING
+  - id: hist_gradient_boosting
+    name: Histogram Gradient Boosting
+    family: boosting
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Gradient boosting nativo do scikit-learn, inspirado no LightGBM, com suporte a valores em falta.
+    how_it_works: >-
+      Treina árvores em sequência; cada nova árvore corrige os erros das
+      anteriores. As variáveis são discretizadas em histogramas para acelerar.
+    strengths: [Alto desempenho, Trata valores em falta, Early stopping incorporado, Sem dependências externas]
+    weaknesses: [Mais hiperparâmetros, Menos interpretável]
+    when_to_use: Alternativa ao LightGBM quando não se pode instalar bibliotecas externas.
+    interpretability: 2
+    speed: 4
+    needs_scaling: false
+    handles_missing: true
+    handles_categorical: true
+    hyperparameters:
+      - name: learning_rate
+        label: Taxa de aprendizagem
+        type: float
+        default: 0.1
+        min: 0.001
+        max: 1
+        log: true
+        importance: alta
+        description: Peso de cada nova árvore. Valores baixos exigem mais iterações mas generalizam melhor.
+        increase: Aprende mais depressa, risco de overfitting e instabilidade.
+        decrease: Mais robusto; precisa de mais iterações.
+        search: {low: 0.02, high: 0.2}
+        term: learning_rate
+      - name: max_iter
+        label: Nº de iterações (árvores)
+        type: int
+        default: 300
+        min: 10
+        max: 5000
+        log: true
+        importance: alta
+        description: Nº máximo de árvores (com early stopping, para automaticamente).
+        increase: Mais capacidade; com learning rate alto → overfitting.
+        decrease: Risco de underfitting.
+        search: {low: 100, high: 1000}
+        term: n_estimators
+      - name: max_leaf_nodes
+        label: Máx. folhas por árvore
+        type: int
+        default: 31
+        min: 2
+        max: 512
+        log: true
+        importance: alta
+        description: Complexidade de cada árvore.
+        increase: Árvores mais complexas.
+        decrease: Árvores mais simples.
+        search: {low: 15, high: 127}
+        term: num_leaves
+      - name: min_samples_leaf
+        label: Mínimo de registos por folha
+        type: int
+        default: 20
+        min: 1
+        max: 1000
+        log: true
+        importance: média
+        description: Regulariza as folhas.
+        increase: Mais regularizado.
+        decrease: Mais detalhe.
+        search: {low: 10, high: 200}
+        term: min_samples_leaf
+      - name: l2_regularization
+        label: Regularização L2
+        type: float
+        default: 0.0
+        min: 0
+        max: 100
+        importance: média
+        description: Penaliza valores extremos nas folhas.
+        increase: Mais conservador.
+        decrease: Menos conservador.
+        search: {low: 0.0, high: 10}
+        term: regularizacao
+      - name: early_stopping
+        label: Early stopping
+        type: choice
+        default: auto
+        choices: [auto, "true", "false"]
+        importance: média
+        description: Para o treino quando a validação interna deixa de melhorar.
+        increase: n/a
+        decrease: n/a
+        term: early_stopping
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced]
+        importance: média
+        description: Compensa desequilíbrio (só classificação).
+        increase: n/a
+        decrease: n/a
+        term: class_weight
+
+  - id: lightgbm
+    name: LightGBM
+    family: boosting
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: lightgbm
+    description: Gradient boosting muito rápido e preciso, crescimento de árvores por folha. Estado da arte em dados tabulares.
+    how_it_works: >-
+      Constrói árvores sequencialmente, crescendo a folha que mais reduz o erro
+      (leaf-wise). Usa histogramas e amostragem para escalar a milhões de linhas.
+    strengths: [Alto desempenho, Muito rápido, Trata valores em falta, Escala bem]
+    weaknesses: [Overfitting em bases pequenas se num_leaves alto, Muitos hiperparâmetros]
+    when_to_use: Modelo principal na maioria dos problemas tabulares de BI.
+    interpretability: 2
+    speed: 5
+    needs_scaling: false
+    handles_missing: true
+    handles_categorical: true
+    hyperparameters:
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 400
+        min: 10
+        max: 10000
+        log: true
+        importance: alta
+        description: Nº de árvores do boosting. Interage com a taxa de aprendizagem.
+        increase: Mais capacidade; sem early stopping → overfitting.
+        decrease: Underfitting.
+        search: {low: 200, high: 1500}
+        term: n_estimators
+      - name: learning_rate
+        label: Taxa de aprendizagem
+        type: float
+        default: 0.05
+        min: 0.001
+        max: 1
+        log: true
+        importance: alta
+        description: Contribuição de cada árvore. Regra prática — metade da taxa → dobro das árvores.
+        increase: Treino rápido mas instável/overfitting.
+        decrease: Mais preciso e estável, precisa de mais árvores.
+        search: {low: 0.01, high: 0.2}
+        term: learning_rate
+      - name: num_leaves
+        label: Nº de folhas por árvore
+        type: int
+        default: 31
+        min: 2
+        max: 1024
+        log: true
+        importance: alta
+        description: Principal controlo de complexidade. Deve ser < 2^max_depth.
+        increase: Capta interações complexas, risco de overfitting.
+        decrease: Modelo mais simples.
+        search: {low: 15, high: 127}
+        term: num_leaves
+      - name: max_depth
+        label: Profundidade máxima
+        type: int
+        default: -1
+        min: -1
+        max: 32
+        importance: média
+        description: -1 = sem limite. Útil para limitar árvores em bases pequenas.
+        increase: Mais complexo.
+        decrease: Mais simples.
+        search: {low: 4, high: 12}
+        term: max_depth
+      - name: min_child_samples
+        label: Mínimo de registos por folha
+        type: int
+        default: 20
+        min: 1
+        max: 2000
+        log: true
+        importance: alta
+        description: Evita folhas com poucos registos (ruído).
+        increase: Mais regularizado.
+        decrease: Mais detalhe, risco de overfitting.
+        search: {low: 10, high: 200}
+        term: min_samples_leaf
+      - name: subsample
+        label: Amostragem de linhas
+        type: float
+        default: 0.8
+        min: 0.3
+        max: 1.0
+        importance: média
+        description: Fração de linhas usada em cada árvore (com subsample_freq=1).
+        increase: Menos aleatoriedade.
+        decrease: Mais regularização e rapidez.
+        search: {low: 0.6, high: 1.0}
+        term: subsample
+      - name: colsample_bytree
+        label: Amostragem de colunas
+        type: float
+        default: 0.8
+        min: 0.3
+        max: 1.0
+        importance: média
+        description: Fração de variáveis usada em cada árvore.
+        increase: Menos diversidade.
+        decrease: Mais regularização; útil com muitas variáveis.
+        search: {low: 0.5, high: 1.0}
+        term: colsample
+      - name: reg_lambda
+        label: Regularização L2 (lambda)
+        type: float
+        default: 1.0
+        min: 0
+        max: 100
+        importance: média
+        description: Penaliza pesos extremos nas folhas.
+        increase: Mais conservador.
+        decrease: Menos conservador.
+        search: {low: 0.0, high: 10}
+        term: regularizacao
+      - name: reg_alpha
+        label: Regularização L1 (alpha)
+        type: float
+        default: 0.0
+        min: 0
+        max: 100
+        importance: baixa
+        description: Penalização L1 nos pesos das folhas.
+        increase: Mais esparso.
+        decrease: Menos regularizado.
+        search: {low: 0.0, high: 5}
+        term: regularizacao
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced]
+        importance: média
+        description: Compensa desequilíbrio (só classificação).
+        increase: n/a
+        decrease: n/a
+        term: class_weight
+
+  - id: xgboost
+    name: XGBoost
+    family: boosting
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: xgboost
+    description: Implementação de gradient boosting regularizado, muito usada em competições e em fraude.
+    how_it_works: Árvores sequenciais com regularização explícita da complexidade e suporte nativo a valores em falta.
+    strengths: [Alto desempenho, scale_pos_weight para desequilíbrio, Regularização rica]
+    weaknesses: [Mais lento que LightGBM em bases grandes, Muitos hiperparâmetros]
+    when_to_use: Dados muito desequilibrados (fraude), alternativa ao LightGBM.
+    interpretability: 2
+    speed: 4
+    needs_scaling: false
+    handles_missing: true
+    handles_categorical: false
+    hyperparameters:
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 400
+        min: 10
+        max: 10000
+        log: true
+        importance: alta
+        description: Nº de árvores.
+        increase: Mais capacidade.
+        decrease: Underfitting.
+        search: {low: 200, high: 1500}
+        term: n_estimators
+      - name: learning_rate
+        label: Taxa de aprendizagem (eta)
+        type: float
+        default: 0.05
+        min: 0.001
+        max: 1
+        log: true
+        importance: alta
+        description: Contribuição de cada árvore.
+        increase: Mais rápido, risco de overfitting.
+        decrease: Mais estável, precisa de mais árvores.
+        search: {low: 0.01, high: 0.2}
+        term: learning_rate
+      - name: max_depth
+        label: Profundidade máxima
+        type: int
+        default: 6
+        min: 1
+        max: 16
+        importance: alta
+        description: Profundidade de cada árvore (crescimento por nível).
+        increase: Interações mais complexas, overfitting.
+        decrease: Mais simples.
+        search: {low: 3, high: 10}
+        term: max_depth
+      - name: min_child_weight
+        label: Peso mínimo por folha
+        type: float
+        default: 1
+        min: 0
+        max: 100
+        importance: média
+        description: Soma mínima de pesos (hessiano) numa folha; semelhante a mínimo de registos.
+        increase: Mais conservador.
+        decrease: Mais detalhe.
+        search: {low: 1, high: 20}
+        term: min_samples_leaf
+      - name: subsample
+        label: Amostragem de linhas
+        type: float
+        default: 0.8
+        min: 0.3
+        max: 1.0
+        importance: média
+        description: Fração de linhas por árvore.
+        increase: Menos aleatoriedade.
+        decrease: Mais regularização.
+        search: {low: 0.6, high: 1.0}
+        term: subsample
+      - name: colsample_bytree
+        label: Amostragem de colunas
+        type: float
+        default: 0.8
+        min: 0.3
+        max: 1.0
+        importance: média
+        description: Fração de variáveis por árvore.
+        increase: Menos diversidade.
+        decrease: Mais regularização.
+        search: {low: 0.5, high: 1.0}
+        term: colsample
+      - name: gamma
+        label: Ganho mínimo para dividir (gamma)
+        type: float
+        default: 0.0
+        min: 0
+        max: 20
+        importance: baixa
+        description: Uma divisão só é feita se reduzir a perda pelo menos este valor.
+        increase: Árvores mais podadas.
+        decrease: Mais divisões.
+        search: {low: 0.0, high: 5}
+      - name: reg_lambda
+        label: Regularização L2 (lambda)
+        type: float
+        default: 1.0
+        min: 0
+        max: 100
+        importance: média
+        description: Penaliza pesos extremos.
+        increase: Mais conservador.
+        decrease: Menos conservador.
+        search: {low: 0.5, high: 10}
+        term: regularizacao
+      - name: scale_pos_weight
+        label: Peso da classe positiva
+        type: float
+        default: 1.0
+        min: 0.01
+        max: 1000
+        log: true
+        importance: alta
+        description: Multiplica o peso dos positivos. Referência = nº negativos / nº positivos (só classificação binária).
+        increase: Mais recall, menos precisão; probabilidades descalibradas.
+        decrease: Mais precisão, menos recall.
+        search: {low: 1, high: 50}
+        term: scale_pos_weight
+
+  # =========================================================== OUTROS
+  - id: knn
+    name: K-Vizinhos Mais Próximos (KNN)
+    family: instance
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Prevê com base nos k registos mais semelhantes do histórico.
+    how_it_works: Calcula distâncias a todos os registos de treino e usa a votação/média dos k mais próximos.
+    strengths: [Intuitivo, Sem treino, Capta padrões locais]
+    weaknesses: [Lento em bases grandes, Sensível à escala e a muitas dimensões]
+    when_to_use: Bases pequenas e de baixa dimensão; explicar por "casos semelhantes".
+    interpretability: 3
+    speed: 2
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_neighbors
+        label: Nº de vizinhos (k)
+        type: int
+        default: 15
+        min: 1
+        max: 500
+        log: true
+        importance: alta
+        description: Quantos casos semelhantes são consultados.
+        increase: Previsões mais suaves (risco de underfitting).
+        decrease: Mais sensível a ruído (overfitting).
+        search: {low: 5, high: 75}
+      - name: weights
+        label: Ponderação
+        type: choice
+        default: distance
+        choices: [uniform, distance]
+        importance: média
+        description: "'distance' dá mais peso aos vizinhos mais próximos."
+        increase: n/a
+        decrease: n/a
+      - name: p
+        label: Métrica de distância (p)
+        type: int
+        default: 2
+        min: 1
+        max: 2
+        importance: baixa
+        description: 1 = Manhattan, 2 = Euclidiana.
+        increase: n/a
+        decrease: n/a
+        term: distancia_euclidiana
+
+  - id: svm
+    name: Máquina de Vetores de Suporte (SVM)
+    family: kernel
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Encontra a fronteira de máxima margem entre classes, com kernels para relações não lineares.
+    how_it_works: Projeta os dados (kernel) e procura o hiperplano com maior margem; C controla a tolerância a erros.
+    strengths: [Eficaz em dimensões médias, Robusto com bom kernel]
+    weaknesses: [Lento acima de ~20 mil linhas, Pouco interpretável, Sensível à escala]
+    when_to_use: Bases pequenas/médias com relações complexas.
+    interpretability: 1
+    speed: 1
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: C
+        label: Penalização de erros (C)
+        type: float
+        default: 1.0
+        min: 0.001
+        max: 1000
+        log: true
+        importance: alta
+        description: C alto tolera menos erros de treino (margem estreita).
+        increase: Overfitting.
+        decrease: Margem larga, underfitting.
+        search: {low: 0.1, high: 100}
+        term: regularizacao
+      - name: kernel
+        label: Kernel
+        type: choice
+        default: rbf
+        choices: [rbf, linear, poly]
+        importance: alta
+        description: Forma da fronteira de decisão.
+        increase: n/a
+        decrease: n/a
+      - name: gamma
+        label: Alcance do kernel (gamma)
+        type: choice
+        default: scale
+        choices: [scale, auto, "0.01", "0.1", "1"]
+        importance: média
+        description: Alcance da influência de cada ponto (kernel rbf).
+        increase: n/a
+        decrease: n/a
+      - name: class_weight
+        label: Peso das classes
+        type: choice
+        default: none
+        choices: [none, balanced]
+        importance: média
+        description: Compensa desequilíbrio (só classificação).
+        increase: n/a
+        decrease: n/a
+        term: class_weight
+
+  - id: naive_bayes
+    name: Naive Bayes Gaussiano
+    family: probabilistic
+    tasks: [binary_classification, multiclass_classification]
+    library: scikit-learn
+    description: Classificador probabilístico que assume independência entre variáveis.
+    how_it_works: Aplica o teorema de Bayes com distribuições normais por classe e variável.
+    strengths: [Extremamente rápido, Funciona com poucos dados]
+    weaknesses: [Pressuposto de independência raramente verdadeiro, Probabilidades pouco calibradas]
+    when_to_use: Base rápida; dados muito pequenos.
+    interpretability: 3
+    speed: 5
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: var_smoothing
+        label: Suavização de variância
+        type: float
+        default: 0.000000001
+        min: 0.000000000001
+        max: 1
+        log: true
+        importance: baixa
+        description: Estabiliza cálculos com variâncias muito pequenas.
+        increase: Mais suave.
+        decrease: Mais sensível.
+
+  - id: mlp
+    name: Rede Neuronal (MLP)
+    family: neural
+    tasks: [binary_classification, multiclass_classification, regression]
+    library: scikit-learn
+    description: Perceptrão multicamada — camadas de neurónios que aprendem representações não lineares.
+    how_it_works: Combina as variáveis em camadas ocultas com funções de ativação; treinado por gradiente descendente.
+    strengths: [Capta relações muito complexas]
+    weaknesses: [Precisa de muitos dados, Pouco interpretável, Sensível a escala e hiperparâmetros]
+    when_to_use: Bases grandes, depois de testar boosting.
+    interpretability: 1
+    speed: 2
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: hidden_layer_sizes
+        label: Arquitetura (neurónios por camada)
+        type: choice
+        default: "64,32"
+        choices: ["32", "64", "64,32", "128,64", "128,64,32"]
+        importance: alta
+        description: Nº de neurónios em cada camada oculta.
+        increase: Mais capacidade, mais dados necessários.
+        decrease: Mais simples.
+        search: {choices: ["32", "64,32", "128,64"]}
+      - name: alpha
+        label: Regularização L2 (alpha)
+        type: float
+        default: 0.001
+        min: 0.000001
+        max: 1
+        log: true
+        importance: alta
+        description: Penalização dos pesos.
+        increase: Mais regularizado.
+        decrease: Mais flexível.
+        search: {low: 0.00001, high: 0.1}
+        term: regularizacao
+      - name: learning_rate_init
+        label: Taxa de aprendizagem inicial
+        type: float
+        default: 0.001
+        min: 0.00001
+        max: 0.1
+        log: true
+        importance: média
+        description: Tamanho dos passos do otimizador.
+        increase: Treino rápido, instável.
+        decrease: Lento, estável.
+        search: {low: 0.0001, high: 0.01}
+        term: learning_rate
+      - name: max_iter
+        label: Épocas máximas
+        type: int
+        default: 300
+        min: 50
+        max: 5000
+        importance: baixa
+        description: Nº máximo de passagens pelos dados.
+        increase: Mais treino.
+        decrease: Menos treino.
+      - name: early_stopping
+        label: Early stopping
+        type: bool
+        default: true
+        importance: média
+        description: Para quando a validação interna deixa de melhorar.
+        increase: n/a
+        decrease: n/a
+        term: early_stopping
+
+  # =========================================================== SÉRIES TEMPORAIS
+  - id: seasonal_naive
+    name: Naive Sazonal
+    family: baseline_ts
+    tasks: [forecasting]
+    library: nativo
+    description: "Repete o valor do mesmo período do ciclo anterior (ex.: a mesma segunda-feira da semana passada)."
+    how_it_works: previsão(t + h) = valor(t + h − m), onde m é o comprimento da sazonalidade.
+    strengths: [Base obrigatória, Zero afinação, Muito difícil de bater em séries estáveis]
+    weaknesses: [Não capta tendência nem eventos]
+    when_to_use: Sempre, como referência.
+    interpretability: 5
+    speed: 5
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: season_length
+        label: Comprimento da sazonalidade (m)
+        type: int
+        default: 7
+        min: 1
+        max: 366
+        importance: alta
+        description: "Diário → 7; semanal → 52; mensal → 12."
+        increase: n/a
+        decrease: n/a
+        term: sazonalidade
+
+  - id: holt_winters
+    name: Holt-Winters (ETS)
+    family: statistical_ts
+    tasks: [forecasting]
+    library: statsmodels
+    description: Suavização exponencial com nível, tendência e sazonalidade.
+    how_it_works: Atualiza nível, tendência e fatores sazonais com médias ponderadas que dão mais peso ao recente.
+    strengths: [Robusto, Interpretável, Rápido]
+    weaknesses: [Uma série de cada vez, Não usa variáveis externas]
+    when_to_use: Séries com tendência e sazonalidade estáveis.
+    interpretability: 4
+    speed: 4
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: trend
+        label: Tendência
+        type: choice
+        default: add
+        choices: [add, mul, none]
+        importance: alta
+        description: Aditiva (cresce X por período), multiplicativa (cresce X%) ou sem tendência.
+        increase: n/a
+        decrease: n/a
+        term: tendencia
+      - name: damped_trend
+        label: Tendência amortecida
+        type: bool
+        default: true
+        importance: média
+        description: Faz a tendência abrandar no horizonte — evita extrapolações irrealistas.
+        increase: n/a
+        decrease: n/a
+      - name: seasonal
+        label: Sazonalidade
+        type: choice
+        default: add
+        choices: [add, mul, none]
+        importance: alta
+        description: Aditiva (amplitude constante) ou multiplicativa (amplitude cresce com o nível).
+        increase: n/a
+        decrease: n/a
+        term: sazonalidade
+      - name: seasonal_periods
+        label: Período sazonal
+        type: int
+        default: 7
+        min: 2
+        max: 366
+        importance: alta
+        description: Comprimento do ciclo sazonal.
+        increase: n/a
+        decrease: n/a
+        term: sazonalidade
+
+  - id: sarima
+    name: SARIMA
+    family: statistical_ts
+    tasks: [forecasting]
+    library: statsmodels
+    description: Modelo autorregressivo integrado de médias móveis com componente sazonal.
+    how_it_works: Modela a série diferenciada como combinação de valores (AR) e erros (MA) passados, com termos sazonais.
+    strengths: [Fundamentação estatística, Intervalos de confiança]
+    weaknesses: [Afinação técnica, Lento com sazonalidades longas, Uma série de cada vez]
+    when_to_use: Séries mensais/semanais com estrutura de autocorrelação clara.
+    interpretability: 3
+    speed: 2
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: p
+        label: Ordem autorregressiva (p)
+        type: int
+        default: 1
+        min: 0
+        max: 5
+        importance: alta
+        description: Nº de valores passados usados.
+        increase: Mais memória.
+        decrease: Mais simples.
+        term: autocorrelacao
+      - name: d
+        label: Diferenciação (d)
+        type: int
+        default: 1
+        min: 0
+        max: 2
+        importance: alta
+        description: Nº de diferenciações para remover tendência.
+        increase: n/a
+        decrease: n/a
+        term: estacionariedade
+      - name: q
+        label: Ordem de médias móveis (q)
+        type: int
+        default: 1
+        min: 0
+        max: 5
+        importance: média
+        description: Nº de erros passados usados.
+        increase: n/a
+        decrease: n/a
+      - name: P
+        label: AR sazonal (P)
+        type: int
+        default: 1
+        min: 0
+        max: 2
+        importance: média
+        description: Termos autorregressivos sazonais.
+        increase: n/a
+        decrease: n/a
+      - name: D
+        label: Diferenciação sazonal (D)
+        type: int
+        default: 1
+        min: 0
+        max: 1
+        importance: média
+        description: Remove o padrão sazonal.
+        increase: n/a
+        decrease: n/a
+      - name: Q
+        label: MA sazonal (Q)
+        type: int
+        default: 1
+        min: 0
+        max: 2
+        importance: baixa
+        description: Termos de médias móveis sazonais.
+        increase: n/a
+        decrease: n/a
+      - name: s
+        label: Período sazonal (s)
+        type: int
+        default: 7
+        min: 0
+        max: 52
+        importance: alta
+        description: Comprimento do ciclo (0 = sem sazonalidade).
+        increase: n/a
+        decrease: n/a
+        term: sazonalidade
+
+  - id: gbm_lags
+    name: Gradient Boosting com lags (modelo global)
+    family: ml_ts
+    tasks: [forecasting]
+    library: lightgbm
+    description: Transforma a previsão num problema de regressão com lags, médias móveis e calendário; aprende com todas as séries.
+    how_it_works: >-
+      Cria variáveis com valores passados (lags), médias móveis e calendário e
+      treina um LightGBM. Prevê de forma recursiva, um passo de cada vez.
+    strengths: [Usa variáveis externas (promoções, preço, feriados), Aprende entre séries, Alto desempenho]
+    weaknesses: [Mais complexo, Erros acumulam-se em horizontes longos]
+    when_to_use: Muitas séries, efeitos de calendário/promoção relevantes.
+    interpretability: 2
+    speed: 4
+    needs_scaling: false
+    handles_missing: true
+    handles_categorical: true
+    hyperparameters:
+      - name: lags
+        label: Lags (períodos)
+        type: choice
+        default: "1,7,14,28"
+        choices: ["1,7", "1,7,14,28", "1,2,3,7,14,21,28", "1,7,14,28,364", "1,2,3,4,12", "1,4,52"]
+        importance: alta
+        description: Valores passados usados como variáveis.
+        increase: Mais memória da série; mais histórico necessário.
+        decrease: Modelo mais simples.
+        term: lag
+      - name: rolling_windows
+        label: Janelas de média móvel
+        type: choice
+        default: "7,28"
+        choices: ["7", "7,28", "7,14,28", "4,12", "3,6,12"]
+        importance: média
+        description: Médias móveis do passado usadas como variáveis.
+        increase: Mais contexto.
+        decrease: Mais simples.
+        term: media_movel
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 400
+        min: 50
+        max: 5000
+        log: true
+        importance: alta
+        description: Nº de árvores do LightGBM.
+        increase: Mais capacidade.
+        decrease: Menos capacidade.
+        term: n_estimators
+      - name: learning_rate
+        label: Taxa de aprendizagem
+        type: float
+        default: 0.05
+        min: 0.005
+        max: 0.5
+        log: true
+        importance: alta
+        description: Contribuição de cada árvore.
+        increase: Mais rápido, instável.
+        decrease: Mais estável.
+        term: learning_rate
+      - name: num_leaves
+        label: Nº de folhas
+        type: int
+        default: 31
+        min: 4
+        max: 256
+        log: true
+        importance: média
+        description: Complexidade de cada árvore.
+        increase: Mais complexo.
+        decrease: Mais simples.
+        term: num_leaves
+
+  # =========================================================== CLUSTERING
+  - id: kmeans
+    name: K-Means
+    family: clustering
+    tasks: [clustering]
+    library: scikit-learn
+    description: Divide os registos em k grupos, cada um representado pelo seu centróide (média).
+    how_it_works: Alterna entre atribuir cada ponto ao centróide mais próximo e recalcular os centróides.
+    strengths: [Simples e rápido, Segmentos fáceis de descrever]
+    weaknesses: [Exige escolher k, Assume grupos esféricos de tamanho semelhante, Sensível à escala e outliers]
+    when_to_use: Segmentação de clientes/produtos com variáveis numéricas normalizadas.
+    interpretability: 4
+    speed: 5
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_clusters
+        label: Nº de segmentos (k)
+        type: int
+        default: 5
+        min: 2
+        max: 20
+        importance: alta
+        description: Quantos segmentos criar. O agente sugere k pela silhueta e pelo cotovelo.
+        increase: Segmentos mais finos, mais difíceis de operacionalizar.
+        decrease: Segmentos mais genéricos.
+        search: {low: 2, high: 10}
+        term: kmeans
+      - name: n_init
+        label: Nº de inicializações
+        type: int
+        default: 10
+        min: 1
+        max: 50
+        importance: baixa
+        description: Repete o algoritmo com sementes diferentes e fica com o melhor.
+        increase: Resultado mais estável.
+        decrease: Mais rápido.
+
+  - id: gaussian_mixture
+    name: Mistura Gaussiana (GMM)
+    family: clustering
+    tasks: [clustering]
+    library: scikit-learn
+    description: Modela os dados como mistura de distribuições normais; dá probabilidade de pertença a cada segmento.
+    how_it_works: Algoritmo EM estima média e covariância de cada componente.
+    strengths: [Segmentos elípticos de tamanhos diferentes, Pertença probabilística]
+    weaknesses: [Mais lento, Pode ser instável]
+    when_to_use: Quando os segmentos têm formas/dispersões diferentes.
+    interpretability: 3
+    speed: 3
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_components
+        label: Nº de segmentos
+        type: int
+        default: 5
+        min: 2
+        max: 20
+        importance: alta
+        description: Nº de componentes gaussianas.
+        increase: Mais segmentos.
+        decrease: Menos segmentos.
+        search: {low: 2, high: 10}
+      - name: covariance_type
+        label: Tipo de covariância
+        type: choice
+        default: full
+        choices: [full, tied, diag, spherical]
+        importance: média
+        description: Flexibilidade da forma de cada segmento.
+        increase: n/a
+        decrease: n/a
+
+  - id: agglomerative
+    name: Clustering Hierárquico (Aglomerativo)
+    family: clustering
+    tasks: [clustering]
+    library: scikit-learn
+    description: Junta progressivamente os registos/grupos mais próximos, formando uma hierarquia.
+    how_it_works: Começa com cada ponto como grupo e funde os pares mais próximos segundo o critério de ligação.
+    strengths: [Hierarquia de segmentos, Não depende da inicialização]
+    weaknesses: [Lento em bases grandes (memória quadrática)]
+    when_to_use: Bases até ~10 mil registos; explorar níveis de detalhe.
+    interpretability: 4
+    speed: 2
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_clusters
+        label: Nº de segmentos
+        type: int
+        default: 5
+        min: 2
+        max: 20
+        importance: alta
+        description: Nível de corte da hierarquia.
+        increase: Mais segmentos.
+        decrease: Menos segmentos.
+      - name: linkage
+        label: Critério de ligação
+        type: choice
+        default: ward
+        choices: [ward, complete, average, single]
+        importance: média
+        description: Como se mede a distância entre grupos. Ward cria grupos compactos.
+        increase: n/a
+        decrease: n/a
+
+  - id: dbscan
+    name: DBSCAN
+    family: clustering
+    tasks: [clustering]
+    library: scikit-learn
+    description: Agrupa zonas densas e marca pontos isolados como ruído; não exige escolher k.
+    how_it_works: Um ponto com pelo menos min_samples vizinhos a menos de eps é núcleo de um cluster.
+    strengths: [Encontra grupos de forma arbitrária, Identifica ruído]
+    weaknesses: [Sensível a eps, Difícil com densidades variáveis]
+    when_to_use: Dados geográficos/densidade; deteção de grupos e ruído.
+    interpretability: 3
+    speed: 3
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: eps
+        label: Raio de vizinhança (eps)
+        type: float
+        default: 0.5
+        min: 0.01
+        max: 10
+        log: true
+        importance: alta
+        description: Distância máxima entre vizinhos (na escala normalizada).
+        increase: Menos clusters, maiores.
+        decrease: Mais ruído e clusters pequenos.
+      - name: min_samples
+        label: Mínimo de vizinhos
+        type: int
+        default: 10
+        min: 2
+        max: 500
+        importance: média
+        description: Densidade mínima para formar um núcleo.
+        increase: Clusters mais densos, mais ruído.
+        decrease: Mais clusters.
+
+  # =========================================================== ANOMALIAS
+  - id: isolation_forest
+    name: Isolation Forest
+    family: anomaly
+    tasks: [anomaly_detection]
+    library: scikit-learn
+    description: Isola observações com divisões aleatórias; anomalias são isoladas com menos divisões.
+    how_it_works: Constrói árvores aleatórias; o comprimento médio do caminho até isolar um ponto é o score.
+    strengths: [Escalável, Sem pressupostos de distribuição, Funciona em muitas dimensões]
+    weaknesses: [Escolha da contaminação, Menos sensível a anomalias locais]
+    when_to_use: Primeira escolha para anomalias em dados tabulares.
+    interpretability: 3
+    speed: 5
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: contamination
+        label: Proporção esperada de anomalias
+        type: float
+        default: 0.02
+        min: 0.001
+        max: 0.3
+        log: true
+        importance: alta
+        description: Fração de registos sinalizados. Deve refletir a capacidade de revisão da equipa.
+        increase: Mais alertas (mais falsos positivos).
+        decrease: Menos alertas (pode perder anomalias).
+        term: contaminacao
+      - name: n_estimators
+        label: Nº de árvores
+        type: int
+        default: 300
+        min: 50
+        max: 2000
+        log: true
+        importance: média
+        description: Mais árvores = score mais estável.
+        increase: Mais estável.
+        decrease: Mais rápido.
+        term: n_estimators
+      - name: max_samples
+        label: Amostra por árvore
+        type: choice
+        default: auto
+        choices: [auto, "256", "512", "1024", "0.5"]
+        importance: baixa
+        description: Nº de registos usados por árvore (auto = 256).
+        increase: n/a
+        decrease: n/a
+      - name: max_features
+        label: Fração de variáveis
+        type: float
+        default: 1.0
+        min: 0.1
+        max: 1.0
+        importance: baixa
+        description: Fração de variáveis por árvore.
+        increase: n/a
+        decrease: n/a
+
+  - id: local_outlier_factor
+    name: Local Outlier Factor (LOF)
+    family: anomaly
+    tasks: [anomaly_detection]
+    library: scikit-learn
+    description: Compara a densidade de cada ponto com a dos seus vizinhos — deteta anomalias locais.
+    how_it_works: Um ponto numa zona muito menos densa que os seus k vizinhos recebe score elevado.
+    strengths: [Deteta anomalias locais e contextuais]
+    weaknesses: [Lento em bases grandes, Sensível à escala]
+    when_to_use: "Grupos com densidades diferentes (ex.: tipos de equipamento)."
+    interpretability: 3
+    speed: 2
+    needs_scaling: true
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: n_neighbors
+        label: Nº de vizinhos
+        type: int
+        default: 35
+        min: 5
+        max: 200
+        importance: alta
+        description: Tamanho da vizinhança de comparação.
+        increase: Anomalias mais globais.
+        decrease: Anomalias mais locais (mais ruído).
+      - name: contamination
+        label: Proporção esperada de anomalias
+        type: float
+        default: 0.02
+        min: 0.001
+        max: 0.3
+        log: true
+        importance: alta
+        description: Fração de registos sinalizados.
+        increase: Mais alertas.
+        decrease: Menos alertas.
+        term: contaminacao
+
+  - id: robust_zscore
+    name: Z-score robusto (MAD)
+    family: anomaly
+    tasks: [anomaly_detection]
+    library: nativo
+    description: Mede quantos desvios absolutos medianos cada valor está da mediana, variável a variável.
+    how_it_works: z = 0,6745 × (x − mediana) / MAD; uma observação é anómala se alguma variável exceder o limiar.
+    strengths: [Totalmente explicável, Robusto a outliers]
+    weaknesses: [Univariado — não deteta combinações anómalas]
+    when_to_use: Regras simples de monitorização por variável.
+    interpretability: 5
+    speed: 5
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: false
+    hyperparameters:
+      - name: threshold
+        label: Limiar do z-score
+        type: float
+        default: 3.5
+        min: 1.5
+        max: 10
+        importance: alta
+        description: Valores acima deste z-score robusto são sinalizados (3,5 é a referência de Iglewicz e Hoaglin).
+        increase: Menos alertas.
+        decrease: Mais alertas.
+        term: zscore_robusto
+
+  # =========================================================== ASSOCIAÇÃO
+  - id: apriori
+    name: Apriori (regras de associação)
+    family: association
+    tasks: [association_rules]
+    library: nativo
+    description: Encontra conjuntos de itens frequentes e gera regras "se A então B".
+    how_it_works: Conta combinações de itens com suporte acima do mínimo e calcula confiança e lift das regras.
+    strengths: [Transparente, Regras acionáveis]
+    weaknesses: [Explosão combinatória com suporte baixo]
+    when_to_use: Análise de cabaz e cross-sell em retalho.
+    interpretability: 5
+    speed: 3
+    needs_scaling: false
+    handles_missing: false
+    handles_categorical: true
+    hyperparameters:
+      - name: min_support
+        label: Suporte mínimo
+        type: float
+        default: 0.01
+        min: 0.0005
+        max: 0.5
+        log: true
+        importance: alta
+        description: Fração mínima de transações que contêm o conjunto de itens.
+        increase: Menos regras, mais frequentes.
+        decrease: Mais regras (incluindo raras e ruidosas).
+        term: suporte
+      - name: min_confidence
+        label: Confiança mínima
+        type: float
+        default: 0.2
+        min: 0.01
+        max: 1
+        importance: alta
+        description: P(B | A) mínima para aceitar a regra.
+        increase: Regras mais fiáveis.
+        decrease: Mais regras.
+        term: confianca
+      - name: min_lift
+        label: Lift mínimo
+        type: float
+        default: 1.2
+        min: 1
+        max: 20
+        importance: média
+        description: Quanto a regra é mais provável que o acaso (1 = independência).
+        increase: Associações mais fortes.
+        decrease: Mais regras fracas.
+        term: lift_associacao
+      - name: max_len
+        label: Tamanho máximo do conjunto
+        type: int
+        default: 3
+        min: 2
+        max: 4
+        importance: baixa
+        description: Nº máximo de itens por regra.
+        increase: Regras mais complexas (mais lento).
+        decrease: Regras simples.

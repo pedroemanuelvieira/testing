@@ -1,0 +1,27 @@
+[project]
+name = "bi-ml-studio"
+version = "1.0.0"
+description = "Plataforma de machine learning com agentes especializados para equipas de BI (Power BI)."
+requires-python = ">=3.10"
+readme = "../README.md"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["mlstudio*"]
+
+[tool.setuptools.package-data]
+"mlstudio.knowledge" = ["data/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning", "ignore::UserWarning"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E9", "F", "B006"]

@@ -1,0 +1,400 @@
+# Glossário — Explicabilidade, Implementação & MLOps, Governança & Ética
+terms:
+  # ================================================================ EXPLICABILIDADE
+  - id: explicabilidade
+    term: Explicabilidade (XAI)
+    en: Explainable AI
+    category: explicabilidade
+    level: básico
+    short: Capacidade de explicar, em termos compreensíveis, porque o modelo produz uma previsão.
+    definition: >-
+      Divide-se em explicação global (o que o modelo aprendeu em geral — que
+      variáveis importam e como) e local (porque é que este cliente tem este
+      score). É condição de confiança do negócio e, em casos regulados,
+      obrigação legal.
+    example: "Global: fim da fidelização é o fator nº1. Local: o cliente 1043 tem risco alto por ter 3 reclamações e fidelização a terminar."
+    related: [importancia_features, explicacao_local, pdp, shap]
+    steps: [explicabilidade]
+
+  - id: importancia_features
+    term: Importância das variáveis
+    en: Feature importance
+    category: explicabilidade
+    level: básico
+    short: Quanto cada variável contribui para o desempenho/previsões do modelo.
+    definition: >-
+      A plataforma usa importância por permutação (agnóstica ao modelo, nas
+      variáveis originais do Power BI) como referência. Importância indica
+      relevância preditiva, não causalidade.
+    example: "Top 3 drivers de churn: meses até fim da fidelização, nº de reclamações, variação do consumo."
+    related: [permutation_importance, shap, causalidade]
+    steps: [explicabilidade]
+
+  - id: permutation_importance
+    term: Importância por permutação
+    en: Permutation importance
+    category: explicabilidade
+    level: intermédio
+    short: Queda de desempenho quando os valores de uma variável são baralhados aleatoriamente.
+    definition: >-
+      Se baralhar a variável piora muito a métrica, o modelo depende dela.
+      Funciona com qualquer modelo e é medida no conjunto de teste. Variáveis
+      muito correlacionadas dividem a importância entre si.
+    example: Baralhar "n_reclamacoes_6m" reduz a AUC de 0,84 para 0,77 → importância 0,07.
+    related: [importancia_features, multicolinearidade]
+    steps: [explicabilidade]
+
+  - id: shap
+    term: SHAP (valores de Shapley)
+    en: SHapley Additive exPlanations
+    category: explicabilidade
+    level: avançado
+    short: Decompõe cada previsão na soma das contribuições de cada variável.
+    definition: >-
+      Baseado em teoria de jogos; garante contribuições consistentes. A
+      plataforma usa uma aproximação agnóstica por substituição (cada variável
+      é substituída por um valor de referência) para explicar previsões
+      individuais diretamente nas variáveis originais.
+    example: "Probabilidade 0,72 = 0,18 (média) + 0,25 (fidelização) + 0,17 (reclamações) + 0,12 (consumo)."
+    related: [explicacao_local, importancia_features]
+    steps: [explicabilidade]
+
+  - id: explicacao_local
+    term: Explicação local (motivos individuais)
+    en: Local explanation / reason codes
+    category: explicabilidade
+    level: intermédio
+    short: Os principais fatores que levaram a uma previsão específica.
+    definition: >-
+      Em produção, a plataforma acrescenta a cada previsão os 3 principais
+      motivos ("reason codes"), que aparecem no Power BI para orientar a ação
+      do comercial/gestor.
+    example: "Motivos: fidelização termina em 1 mês; 3 reclamações; consumo −40%."
+    related: [shap, explicabilidade, direito_explicacao]
+    steps: [explicabilidade, implementacao]
+
+  - id: pdp
+    term: Gráfico de dependência parcial (PDP)
+    en: Partial Dependence Plot
+    category: explicabilidade
+    level: intermédio
+    short: Mostra como a previsão média varia quando se altera uma variável, mantendo as outras.
+    definition: Revela a forma do efeito (linear, saturação, limiar). Pode enganar quando as variáveis estão muito correlacionadas.
+    example: O risco de churn cai acentuadamente após 24 meses de antiguidade e depois estabiliza.
+    related: [importancia_features, elasticidade]
+    steps: [explicabilidade]
+
+  # ================================================================ MLOPS
+  - id: mlops
+    term: MLOps
+    en: Machine Learning Operations
+    category: mlops
+    level: intermédio
+    short: Práticas para pôr modelos em produção de forma fiável, reprodutível e monitorizada.
+    definition: >-
+      Inclui versionamento de dados e modelos, pipelines automatizados,
+      registo de modelos, implementação, monitorização de drift e re-treino.
+      A plataforma cobre este ciclo para o contexto de BI (scoring em lote para
+      o Power BI).
+    example: Modelo de churn re-treinado trimestralmente com alerta automático de drift.
+    related: [registo_modelos, drift_dados, retreino]
+    steps: [implementacao, monitorizacao]
+
+  - id: registo_modelos
+    term: Registo de modelos (model registry)
+    en: Model registry
+    category: mlops
+    level: intermédio
+    short: Catálogo versionado de modelos treinados com métricas, parâmetros e estado.
+    definition: >-
+      Cada modelo tem versão, projeto de origem, dados usados, métricas,
+      hiperparâmetros e estado (candidato, produção, arquivado). Só modelos em
+      produção alimentam o Power BI.
+    example: churn_lightgbm v4 — produção desde 01/11; v5 — candidato.
+    related: [versionamento, champion_challenger]
+    steps: [implementacao]
+
+  - id: versionamento
+    term: Versionamento
+    en: Versioning
+    category: mlops
+    level: básico
+    short: Guardar versões numeradas de dados, código e modelos.
+    definition: Permite reproduzir resultados, comparar versões e voltar atrás (rollback).
+    example: Previsões de outubro produzidas pela versão 3 do modelo.
+    related: [registo_modelos, reprodutibilidade]
+    steps: [implementacao]
+
+  - id: scoring_batch
+    term: Scoring em lote (batch)
+    en: Batch scoring
+    category: mlops
+    level: básico
+    short: Calcular previsões para muitos registos de uma vez, periodicamente.
+    definition: >-
+      Padrão mais comum em BI — extrair a população do Power BI, pontuar e
+      escrever a tabela de previsões que os relatórios consomem (diária,
+      semanal ou mensalmente).
+    example: Todos os dias às 6h pontuar as faturas emitidas na véspera.
+    related: [scoring_online, push_dataset]
+    steps: [implementacao]
+
+  - id: scoring_online
+    term: Scoring online (API)
+    en: Real-time scoring
+    category: mlops
+    level: intermédio
+    short: Previsão a pedido, registo a registo, através de uma API.
+    definition: Necessário quando a decisão é imediata (fraude, preço dinâmico). A plataforma expõe um endpoint REST por modelo.
+    example: POST /api/models/{id}/predict com os dados de uma transação.
+    related: [scoring_batch]
+    steps: [implementacao]
+
+  - id: champion_challenger
+    term: Champion / challenger
+    en: Champion / challenger
+    category: mlops
+    level: intermédio
+    short: Comparar o modelo em produção (champion) com um candidato (challenger) antes de o substituir.
+    definition: O challenger só é promovido se for melhor de forma consistente — idealmente num teste A/B.
+    example: LightGBM v5 (challenger) vs v4 (champion) durante um mês.
+    related: [registo_modelos, teste_ab]
+    steps: [implementacao, monitorizacao]
+
+  - id: drift_dados
+    term: Data drift (mudança nos dados)
+    en: Data drift / covariate shift
+    category: mlops
+    level: intermédio
+    short: A distribuição das variáveis em produção afasta-se da do treino.
+    definition: >-
+      Causas — mudanças de mercado, de produto, de processos ou de definição
+      de dados no modelo semântico. Mede-se com PSI e testes estatísticos.
+      Drift não implica necessariamente perda de desempenho, mas é um alerta.
+    example: Nova campanha digital aumentou muito os clientes com canal "Online".
+    related: [psi, teste_ks, concept_drift, monitorizacao_termo]
+    steps: [monitorizacao]
+
+  - id: concept_drift
+    term: Concept drift
+    en: Concept drift
+    category: mlops
+    level: avançado
+    short: A relação entre as variáveis e o alvo muda ao longo do tempo.
+    definition: Mais grave que o data drift — o modelo aprendeu regras que deixaram de valer. Deteta-se pela queda de desempenho quando os resultados reais chegam.
+    example: Após uma alteração de preços, os clientes com plano Premium passam a sair mais.
+    related: [drift_dados, retreino]
+    steps: [monitorizacao]
+
+  - id: psi
+    term: PSI (índice de estabilidade da população)
+    en: Population Stability Index
+    category: mlops
+    level: intermédio
+    short: Mede quanto a distribuição de uma variável mudou entre dois períodos.
+    formula: PSI = Σ (atual% − referência%) × ln(atual% / referência%)
+    definition: "Referência habitual: < 0,1 estável; 0,1–0,25 alteração moderada; > 0,25 alteração significativa."
+    example: PSI de 0,31 na variável canal_aquisicao → investigar.
+    related: [drift_dados, teste_ks]
+    steps: [monitorizacao]
+
+  - id: teste_ks
+    term: Teste de Kolmogorov-Smirnov (drift)
+    en: Kolmogorov–Smirnov test
+    category: mlops
+    level: avançado
+    short: Teste estatístico que compara duas distribuições numéricas.
+    definition: Com bases grandes, deteta diferenças minúsculas — complementar com o PSI para avaliar a magnitude.
+    example: KS = 0,12 (p < 0,001) na variável montante.
+    related: [psi, drift_dados, ks_estatistica]
+    steps: [monitorizacao]
+
+  - id: monitorizacao_termo
+    term: Monitorização de modelos
+    en: Model monitoring
+    category: mlops
+    level: intermédio
+    short: Acompanhar dados, previsões e desempenho de um modelo em produção.
+    definition: >-
+      Três níveis — qualidade dos dados de entrada, estabilidade das previsões
+      (drift) e desempenho real quando o alvo fica conhecido. Deve ter
+      limiares de alerta e um responsável.
+    example: Relatório mensal de PSI e AUC real do modelo de churn.
+    related: [drift_dados, retreino]
+    steps: [monitorizacao]
+
+  - id: retreino
+    term: Re-treino
+    en: Retraining
+    category: mlops
+    level: básico
+    short: Treinar novamente o modelo com dados mais recentes.
+    definition: "Pode ser periódico (ex.: trimestral) ou acionado por alertas de drift/desempenho. O novo modelo entra como challenger."
+    example: Re-treino acionado por PSI > 0,25 em 3 variáveis.
+    related: [concept_drift, champion_challenger]
+    steps: [monitorizacao]
+
+  - id: model_card
+    term: Model card (ficha do modelo)
+    en: Model card
+    category: mlops
+    level: intermédio
+    short: Documento que descreve o modelo — objetivo, dados, desempenho, limitações e riscos.
+    definition: Gerado automaticamente pelo Agente de Governança. Essencial para auditoria, AI Act e passagem de conhecimento.
+    example: Ficha do modelo de risco de crédito com métricas por segmento e análise de equidade.
+    related: [ai_act, fairness, registo_modelos]
+    steps: [governanca]
+
+  # ================================================================ GOVERNANÇA
+  - id: rgpd
+    term: RGPD
+    en: GDPR — General Data Protection Regulation
+    category: governanca
+    level: básico
+    short: Regulamento europeu de proteção de dados pessoais.
+    definition: >-
+      Exige base legal para o tratamento, minimização de dados, limitação de
+      finalidade, segurança e respeito pelos direitos dos titulares. O art.
+      22 dá direito a não ficar sujeito a decisões exclusivamente
+      automatizadas com efeitos significativos. Envolva o DPO em projetos com
+      dados pessoais.
+    example: Usar só os dados necessários e pseudonimizados para o modelo de attrition.
+    related: [dados_pessoais, pseudonimizacao, direito_explicacao, ai_act]
+    steps: [governanca]
+
+  - id: dados_pessoais
+    term: Dados pessoais / PII
+    en: Personal data / Personally Identifiable Information
+    category: governanca
+    level: básico
+    short: Informação que identifica ou torna identificável uma pessoa.
+    definition: >-
+      Nome, email, telefone, NIF, IBAN, morada, data de nascimento, IP, etc.
+      Dados de saúde, origem étnica, religião, orientação sexual são
+      categorias especiais com proteção reforçada. O Agente de Governança
+      deteta colunas com PII automaticamente.
+    example: Coluna "email_cliente" detetada como PII e excluída do treino.
+    related: [rgpd, pseudonimizacao, atributo_sensivel]
+    steps: [governanca, qualidade]
+
+  - id: pseudonimizacao
+    term: Pseudonimização
+    en: Pseudonymisation
+    category: governanca
+    level: intermédio
+    short: Substituir identificadores diretos por códigos, mantendo a possibilidade de reidentificação controlada.
+    definition: Reduz o risco mas os dados continuam a ser pessoais. Anonimização (irreversível) retira-os do âmbito do RGPD.
+    example: NIF substituído por um hash com chave guardada pela equipa de dados.
+    related: [rgpd, dados_pessoais]
+    steps: [governanca]
+
+  - id: ai_act
+    term: AI Act (Regulamento Europeu de IA)
+    en: EU Artificial Intelligence Act
+    category: governanca
+    level: intermédio
+    short: Regulamento europeu que classifica sistemas de IA por nível de risco e define obrigações.
+    definition: >-
+      Níveis — proibido, alto risco, risco limitado (transparência) e mínimo.
+      São de alto risco, entre outros, sistemas de avaliação de crédito de
+      pessoas singulares e de recrutamento/gestão de trabalhadores, com
+      obrigações de gestão de risco, qualidade de dados, documentação,
+      supervisão humana, robustez e registo. A plataforma indica o nível de
+      risco de cada caso de uso.
+    example: O modelo de attrition e o scoring de crédito exigem documentação e supervisão humana reforçadas.
+    related: [fairness, model_card, human_in_the_loop, rgpd]
+    steps: [governanca]
+
+  - id: fairness
+    term: Equidade (fairness)
+    en: Algorithmic fairness
+    category: governanca
+    level: intermédio
+    short: Garantir que o modelo não prejudica sistematicamente grupos protegidos.
+    definition: >-
+      Avalia-se comparando métricas entre grupos (género, idade...) —
+      paridade demográfica, igualdade de oportunidade, impacto desigual.
+      Remover o atributo sensível não chega: outras variáveis podem funcionar
+      como proxy.
+    example: Taxa de aprovação de crédito de 62% para homens e 48% para mulheres → investigar.
+    related: [paridade_demografica, igualdade_oportunidade, impacto_desigual, proxy_discriminacao]
+    steps: [governanca]
+
+  - id: atributo_sensivel
+    term: Atributo sensível (protegido)
+    en: Sensitive / protected attribute
+    category: governanca
+    level: básico
+    short: Característica pessoal que não deve originar discriminação (género, idade, nacionalidade...).
+    definition: Normalmente excluído do treino, mas mantido à parte para auditar a equidade das previsões.
+    example: "genero excluído das features e usado na análise de equidade."
+    related: [fairness, proxy_discriminacao]
+    steps: [governanca]
+
+  - id: proxy_discriminacao
+    term: Variável proxy
+    en: Proxy variable
+    category: governanca
+    level: avançado
+    short: Variável aparentemente neutra que reproduz um atributo sensível.
+    definition: Código postal pode ser proxy de origem étnica ou rendimento; tipo de contrato pode ser proxy de idade.
+    example: Distrito altamente correlacionado com nacionalidade.
+    related: [fairness, atributo_sensivel]
+    steps: [governanca]
+
+  - id: paridade_demografica
+    term: Paridade demográfica
+    en: Demographic parity
+    category: governanca
+    level: avançado
+    short: A taxa de decisões positivas deve ser semelhante entre grupos.
+    formula: Diferença = |P(ŷ=1 | grupo A) − P(ŷ=1 | grupo B)|
+    definition: Uma diferença acima de ~0,1 merece investigação.
+    example: 22% de clientes de risco alto entre homens vs 21% entre mulheres → paridade.
+    related: [fairness, impacto_desigual]
+    steps: [governanca]
+
+  - id: igualdade_oportunidade
+    term: Igualdade de oportunidade
+    en: Equal opportunity
+    category: governanca
+    level: avançado
+    short: O recall (taxa de verdadeiros positivos) deve ser semelhante entre grupos.
+    definition: Garante que casos positivos reais têm a mesma probabilidade de serem detetados em todos os grupos.
+    example: O modelo deteta 78% dos incumprimentos em jovens e 76% em seniores.
+    related: [fairness, recall]
+    steps: [governanca]
+
+  - id: impacto_desigual
+    term: Impacto desigual (regra dos 4/5)
+    en: Disparate impact (four-fifths rule)
+    category: governanca
+    level: avançado
+    short: Rácio entre a taxa de decisões favoráveis do grupo menos favorecido e do mais favorecido.
+    formula: DI = taxa favorável (grupo desfavorecido) / taxa favorável (grupo favorecido)
+    definition: Valores abaixo de 0,8 indicam possível impacto discriminatório.
+    example: DI = 0,72 na aprovação de crédito por género → alerta.
+    related: [fairness, paridade_demografica]
+    steps: [governanca]
+
+  - id: human_in_the_loop
+    term: Supervisão humana (human-in-the-loop)
+    en: Human-in-the-loop
+    category: governanca
+    level: básico
+    short: Uma pessoa revê ou valida as decisões sugeridas pelo modelo.
+    definition: Obrigatória em sistemas de alto risco e recomendada sempre que a decisão afeta pessoas. O modelo prioriza; a pessoa decide.
+    example: Alertas de fraude acima de 0,7 revistos por um analista antes do bloqueio definitivo.
+    related: [ai_act, rgpd]
+    steps: [governanca, implementacao]
+
+  - id: direito_explicacao
+    term: Direito à explicação
+    en: Right to explanation
+    category: governanca
+    level: intermédio
+    short: Direito do titular a informação significativa sobre a lógica de decisões automatizadas.
+    definition: Decorre do RGPD (arts. 13–15 e 22). Exige conseguir explicar, em linguagem simples, os principais fatores de cada decisão.
+    example: Cliente com crédito recusado é informado dos principais fatores (taxa de esforço elevada).
+    related: [rgpd, explicacao_local]
+    steps: [governanca]

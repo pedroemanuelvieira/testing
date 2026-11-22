@@ -1,0 +1,811 @@
+# Glossário — Qualidade de dados, Preparação & Features, Modelos, Hiperparâmetros, Validação
+terms:
+  # ================================================================ QUALIDADE
+  - id: valores_em_falta
+    term: Valores em falta (missing values)
+    en: Missing values / nulls
+    category: qualidade
+    level: básico
+    short: Células sem valor (vazias/nulas).
+    definition: >-
+      Podem ser aleatórios ou informativos (ex.: satisfação em falta porque o
+      cliente nunca respondeu — o que pode ser, por si, um sinal). O Agente de
+      Qualidade quantifica-os e recomenda imputação, criação de indicador de
+      ausência ou remoção da coluna.
+    example: 22% dos clientes sem resposta ao último inquérito de satisfação.
+    pitfalls: [Remover todas as linhas com nulos (perde-se muita informação), Imputar com estatísticas calculadas no conjunto completo (leakage)]
+    related: [imputacao]
+    steps: [qualidade]
+
+  - id: imputacao
+    term: Imputação
+    en: Imputation
+    category: qualidade
+    level: básico
+    short: Preencher valores em falta com uma estimativa (mediana, moda, constante, modelo).
+    definition: >-
+      Na plataforma, a imputação é feita dentro do pipeline: os valores de
+      substituição são aprendidos apenas no treino e aplicados igual no
+      scoring. Numéricas → mediana; categóricas → categoria "em falta".
+    example: Idade em falta substituída pela mediana (41 anos) do conjunto de treino.
+    related: [valores_em_falta, pipeline]
+    steps: [qualidade, features]
+
+  - id: duplicados
+    term: Registos duplicados
+    en: Duplicates
+    category: qualidade
+    level: básico
+    short: Linhas repetidas que inflacionam o peso de certos casos.
+    definition: Podem resultar de joins mal feitos no modelo semântico (relações muitos-para-muitos). Duplicados entre treino e teste inflacionam as métricas.
+    example: 120 clientes repetidos por terem dois contratos.
+    related: [granularidade, data_leakage]
+    steps: [qualidade]
+
+  - id: outlier
+    term: Outlier (valor atípico)
+    en: Outlier
+    category: qualidade
+    level: básico
+    short: Valor muito diferente da maioria — erro de registo ou caso real extremo.
+    definition: >-
+      Antes de remover, perceber a causa: um erro (idade = 999) deve ser
+      corrigido; um caso real (cliente empresarial gigante) deve ser mantido
+      ou tratado com transformações/modelos robustos.
+    example: Fatura de 2.500.000€ quando o percentil 99 é 18.000€.
+    related: [iqr, zscore_robusto, anomalia]
+    steps: [qualidade]
+
+  - id: iqr
+    term: IQR (amplitude interquartil)
+    en: Interquartile range
+    category: qualidade
+    level: intermédio
+    short: Q3 − Q1; base da regra de Tukey para detetar outliers.
+    formula: Outlier se x < Q1 − 1,5×IQR ou x > Q3 + 1,5×IQR
+    definition: Regra simples e robusta usada pelo Agente de Qualidade para sinalizar valores extremos.
+    example: Q1 = 20, Q3 = 60 → IQR = 40 → outliers acima de 120.
+    related: [outlier, percentil]
+    steps: [qualidade]
+
+  - id: cardinalidade
+    term: Cardinalidade
+    en: Cardinality
+    category: qualidade
+    level: intermédio
+    short: Nº de valores distintos de uma variável categórica.
+    definition: >-
+      Alta cardinalidade (ex.: código postal com 3.000 valores) torna o
+      one-hot inviável — usa-se target encoding ou agrupamento de categorias
+      raras. Cardinalidade igual ao nº de linhas indica um identificador.
+    example: "Coluna comercial_responsavel: 12 valores (baixa). Coluna cliente_id: 6.000 (identificador)."
+    related: [one_hot_encoding, target_encoding, identificador]
+    steps: [qualidade, features]
+
+  - id: identificador
+    term: Identificador (ID)
+    en: Identifier
+    category: qualidade
+    level: básico
+    short: Coluna que identifica unicamente um registo (cliente_id, fatura_id).
+    definition: Nunca deve ser usada como feature (o modelo decoraria IDs), mas deve acompanhar as previsões para as ligar ao Power BI.
+    example: cliente_id incluído na tabela Previsoes_Churn mas excluído do treino.
+    related: [cardinalidade, data_leakage]
+    steps: [qualidade]
+
+  - id: variavel_constante
+    term: Variável constante / quase constante
+    en: Constant / near-zero-variance feature
+    category: qualidade
+    level: básico
+    short: Coluna com (quase) sempre o mesmo valor — não traz informação.
+    definition: O Agente de Qualidade sinaliza colunas em que o valor mais frequente ocupa ≥ 99% das linhas.
+    example: Coluna "país" = "PT" em 99,8% dos clientes.
+    related: [selecao_features]
+    steps: [qualidade]
+
+  - id: data_leakage
+    term: Data leakage (fuga de informação)
+    en: Data leakage / target leakage
+    category: qualidade
+    level: intermédio
+    short: Usar no treino informação que não estaria disponível no momento da previsão.
+    definition: >-
+      É o erro mais grave e mais comum em projetos de ML de BI. Produz
+      métricas espetaculares no teste e um modelo inútil em produção. Formas
+      típicas: colunas preenchidas depois do evento (data de rescisão, motivo
+      de saída, dias de atraso efetivos), agregados calculados com dados do
+      futuro, normalização ajustada a todo o dataset, duplicados entre treino
+      e teste. O Agente de Qualidade sinaliza variáveis com associação
+      suspeitamente perfeita ao alvo.
+    example: Usar "dias_atraso" para prever "atraso_superior_30d" — a variável define o alvo.
+    pitfalls:
+      - "AUC > 0,97 num problema de negócio é quase sempre leakage"
+      - Colunas com nomes como data_cancelamento ou motivo_saida
+    related: [data_corte, pipeline, validacao_temporal]
+    steps: [qualidade, features, avaliacao]
+
+  - id: desequilibrio_classes
+    term: Desequilíbrio de classes
+    en: Class imbalance
+    category: qualidade
+    level: intermédio
+    short: "Uma classe é muito mais rara que a outra (ex.: 1% de fraude)."
+    definition: >-
+      Com desequilíbrio, a accuracy engana. Use PR-AUC, recall/precisão e
+      escolha de limiar por custo. Técnicas: pesos de classe (class_weight,
+      scale_pos_weight), reamostragem (só no treino!) e mais dados positivos.
+      Níveis na plataforma: moderado (10–30%), forte (2–10%), extremo (< 2%).
+    example: 1,2% de transações fraudulentas.
+    pitfalls: [Fazer oversampling antes de dividir treino/teste, Reportar accuracy]
+    related: [class_weight, scale_pos_weight, pr_auc, reamostragem]
+    steps: [qualidade, parametros, avaliacao]
+
+  - id: reamostragem
+    term: Reamostragem (oversampling / undersampling)
+    en: Resampling
+    category: qualidade
+    level: avançado
+    short: Alterar a proporção de classes no treino replicando positivos ou removendo negativos.
+    definition: >-
+      Alternativa aos pesos de classe. Deve ser feita apenas dentro do treino
+      (em cada fold). Distorce as probabilidades — recalibrar se forem usadas
+      como valores absolutos.
+    example: Undersampling dos negativos para uma proporção 1:5.
+    related: [desequilibrio_classes, calibracao]
+    steps: [parametros]
+
+  - id: vies_amostragem
+    term: Viés de seleção / amostragem
+    en: Selection / sampling bias
+    category: qualidade
+    level: avançado
+    short: Os dados de treino não representam a população onde o modelo será usado.
+    definition: Exemplos — só há resultado para créditos aprovados (reject inference); só há resposta de clientes contactados numa campanha anterior.
+    example: Modelo de crédito treinado só com clientes aprovados pela política antiga.
+    related: [amostragem, fairness]
+    steps: [qualidade, governanca]
+
+  # ================================================================ PREPARAÇÃO
+  - id: feature_engineering
+    term: Feature engineering
+    en: Feature engineering
+    category: preparacao
+    level: intermédio
+    short: Criar novas variáveis a partir dos dados brutos para facilitar a aprendizagem.
+    definition: >-
+      Inclui extrair componentes de datas, calcular rácios, recências,
+      tendências, agregações por janela e codificar categorias. Conhecimento
+      de negócio é a maior fonte de boas features. O Agente de Features
+      propõe um plano automático que pode ajustar.
+    example: Rácio salário/mercado, variação de consumo nos últimos 3 meses, dias até ao fim da fidelização.
+    related: [feature, rfm, lag, one_hot_encoding]
+    steps: [features]
+
+  - id: one_hot_encoding
+    term: One-hot encoding
+    en: One-hot encoding
+    category: preparacao
+    level: básico
+    short: Transforma uma categoria em várias colunas 0/1, uma por valor.
+    definition: Adequado para baixa cardinalidade (até ~15 valores). Categorias raras são agrupadas em "outros" para evitar colunas quase vazias.
+    example: "Plano (Básico/Standard/Premium) → plano_Básico, plano_Standard, plano_Premium."
+    related: [cardinalidade, target_encoding, ordinal_encoding]
+    steps: [features]
+
+  - id: target_encoding
+    term: Target encoding
+    en: Target encoding
+    category: preparacao
+    level: avançado
+    short: Substitui cada categoria pela média do alvo nessa categoria (com suavização).
+    definition: >-
+      Ideal para alta cardinalidade. Deve ser calculado com validação cruzada
+      interna para não "espreitar" o alvo (o TargetEncoder do scikit-learn,
+      usado na plataforma, faz isto automaticamente).
+    example: Distrito → taxa média de atraso de entregas nesse distrito.
+    related: [cardinalidade, data_leakage, one_hot_encoding]
+    steps: [features]
+
+  - id: ordinal_encoding
+    term: Codificação ordinal
+    en: Ordinal encoding
+    category: preparacao
+    level: básico
+    short: Atribui um número inteiro a cada categoria.
+    definition: Natural para categorias com ordem (Júnior < Sénior < Chefia). Em árvores funciona razoavelmente mesmo sem ordem; em modelos lineares não.
+    example: "Prioridade: Baixa=1, Média=2, Alta=3, Urgente=4."
+    related: [one_hot_encoding]
+    steps: [features]
+
+  - id: standardizacao
+    term: Normalização / standardização
+    en: Scaling / standardization
+    category: preparacao
+    level: básico
+    short: "Colocar variáveis numéricas na mesma escala (ex.: média 0 e desvio 1)."
+    definition: >-
+      Obrigatório para modelos baseados em distâncias ou gradientes (KNN,
+      SVM, regressão logística, redes neuronais, K-Means). As árvores não
+      precisam. A plataforma aplica-a automaticamente conforme o modelo.
+    formula: z = (x − média) / desvio padrão
+    example: Rendimento (0–20.000€) e nº de filhos (0–5) na mesma escala.
+    related: [kmeans, knn_termo, regressao_logistica]
+    steps: [features]
+
+  - id: transformacao_log
+    term: Transformação logarítmica
+    en: Log transform
+    category: preparacao
+    level: intermédio
+    short: Aplicar log(1 + x) para comprimir caudas longas.
+    definition: >-
+      Torna distribuições assimétricas mais simétricas, reduz a influência de
+      extremos e transforma efeitos multiplicativos em aditivos (base dos
+      modelos log-log de elasticidade).
+    formula: x' = ln(1 + x)
+    example: Valor de compras de 10€ a 50.000€ → 2,4 a 10,8.
+    related: [assimetria, elasticidade]
+    steps: [features]
+
+  - id: binning
+    term: Discretização (binning)
+    en: Binning
+    category: preparacao
+    level: intermédio
+    short: Agrupar valores numéricos em intervalos.
+    definition: Útil para scorecards e comunicação (faixas etárias), mas perde informação. Árvores fazem-no automaticamente.
+    example: Antiguidade em faixas 0-1, 1-3, 3-5, 5+ anos.
+    related: [feature_engineering]
+    steps: [features]
+
+  - id: rfm
+    term: RFM (Recência, Frequência, Valor)
+    en: Recency, Frequency, Monetary
+    category: preparacao
+    level: básico
+    short: Três indicadores clássicos do comportamento de compra de um cliente.
+    definition: >-
+      Recência = dias desde a última compra; Frequência = nº de compras num
+      período; Valor = gasto nesse período. São features poderosas para
+      churn, propensão, CLV e segmentação.
+    example: "Cliente A: R=12 dias, F=24 compras, M=1.850€."
+    related: [feature_engineering, segmentacao_clientes_termo, clv]
+    steps: [features]
+
+  - id: recencia
+    term: Recência
+    en: Recency
+    category: preparacao
+    level: básico
+    short: Tempo decorrido desde o último evento (compra, login, contacto).
+    definition: Normalmente uma das features mais preditivas de churn e propensão.
+    example: dias_desde_ultima_compra = 95.
+    related: [rfm]
+    steps: [features]
+
+  - id: features_data
+    term: Features de data e calendário
+    en: Date / calendar features
+    category: preparacao
+    level: básico
+    short: Componentes extraídos de datas — ano, mês, dia da semana, fim de semana, feriado.
+    definition: Os modelos não percebem datas diretamente; o Agente de Features converte cada coluna de data em componentes e em "dias desde".
+    example: data_expedicao → mes, dia_semana, e_fim_de_semana.
+    related: [feature_engineering, sazonalidade]
+    steps: [features]
+
+  - id: interacao
+    term: Interação entre variáveis
+    en: Feature interaction
+    category: preparacao
+    level: avançado
+    short: Quando o efeito de uma variável depende do valor de outra.
+    definition: Árvores e boosting captam interações automaticamente; em modelos lineares é preciso criar o produto das variáveis.
+    example: Horas extra só aumentam o risco de saída quando a satisfação é baixa.
+    related: [feature_engineering, random_forest_termo]
+    steps: [features]
+
+  - id: selecao_features
+    term: Seleção de features
+    en: Feature selection
+    category: preparacao
+    level: intermédio
+    short: Escolher o subconjunto de variáveis mais úteis.
+    definition: Reduz ruído, tempo de treino e risco de overfitting e simplifica a explicação. Métodos — informação mútua, regularização L1, importância por permutação.
+    example: De 80 colunas do modelo semântico, manter as 25 com mais informação.
+    related: [informacao_mutua, importancia_features, regularizacao]
+    steps: [features]
+
+  - id: informacao_mutua
+    term: Informação mútua
+    en: Mutual information
+    category: preparacao
+    level: avançado
+    short: Mede quanto conhecer uma variável reduz a incerteza sobre o alvo (capta relações não lineares).
+    definition: O Agente de Features usa-a para ordenar as variáveis pelo seu poder preditivo individual antes do treino.
+    example: fim_fidelizacao_meses tem a maior informação mútua com churn.
+    related: [selecao_features, correlacao]
+    steps: [features]
+
+  - id: multicolinearidade
+    term: Multicolinearidade
+    en: Multicollinearity
+    category: preparacao
+    level: intermédio
+    short: Features muito correlacionadas entre si.
+    definition: Torna instáveis e difíceis de interpretar os coeficientes de modelos lineares e divide a importância entre variáveis redundantes. Regularização (Ridge) mitiga.
+    example: Receita e unidades vendidas com correlação 0,97.
+    related: [correlacao, ridge_termo]
+    steps: [perfil, features]
+
+  - id: pca
+    term: PCA (análise de componentes principais)
+    en: Principal Component Analysis
+    category: preparacao
+    level: avançado
+    short: Reduz muitas variáveis correlacionadas a poucas componentes que retêm a maior parte da variância.
+    definition: Usado na plataforma para visualizar segmentos em 2D. As componentes são combinações das variáveis, o que dificulta a interpretação.
+    example: 12 variáveis de comportamento projetadas em 2 componentes para o gráfico de segmentos.
+    related: [clustering, dimensionalidade]
+    steps: [treino]
+
+  - id: dimensionalidade
+    term: Maldição da dimensionalidade
+    en: Curse of dimensionality
+    category: preparacao
+    level: avançado
+    short: Com muitas variáveis, os dados ficam esparsos e as distâncias perdem significado.
+    definition: Afeta sobretudo KNN, SVM e clustering. Mitigação — seleção de features, PCA, mais dados.
+    example: Clustering com 200 variáveis one-hot produz segmentos sem sentido.
+    related: [pca, selecao_features]
+    steps: [features]
+
+  # ================================================================ MODELOS
+  - id: regressao_linear
+    term: Regressão linear
+    en: Linear regression
+    category: modelos
+    level: básico
+    short: Modelo que prevê um número como soma ponderada das variáveis.
+    definition: Totalmente interpretável. Base de comparação para regressão. Variantes regularizadas — Ridge, Lasso, Elastic Net.
+    formula: ŷ = β₀ + β₁x₁ + ... + βₚxₚ
+    example: unidades = 120 − 35 × preço + 40 × promoção.
+    related: [ridge_termo, regularizacao, regressao]
+    steps: [modelos]
+
+  - id: regressao_logistica
+    term: Regressão logística
+    en: Logistic regression
+    category: modelos
+    level: básico
+    short: Modelo linear de classificação que produz probabilidades.
+    definition: >-
+      Apesar do nome, é um modelo de classificação. Cada coeficiente traduz-se
+      num odds ratio (exp(β)): quanto multiplica a chance do evento. Padrão
+      em scorecards de crédito.
+    formula: P(y=1) = 1 / (1 + e^−(β₀ + β₁x₁ + ...))
+    example: Cada reclamação adicional multiplica a chance de churn por 1,4 (odds ratio).
+    related: [classificacao, regularizacao, odds_ratio]
+    steps: [modelos]
+
+  - id: odds_ratio
+    term: Odds ratio
+    en: Odds ratio
+    category: modelos
+    level: avançado
+    short: Fator pelo qual a chance (odds) do evento se multiplica quando a variável aumenta uma unidade.
+    formula: OR = e^β
+    definition: Forma padrão de comunicar coeficientes de regressão logística ao negócio.
+    example: OR = 2 → duplica a chance do evento.
+    related: [regressao_logistica]
+    steps: [explicabilidade]
+
+  - id: ridge_termo
+    term: Ridge, Lasso e Elastic Net
+    en: Ridge / Lasso / Elastic Net
+    category: modelos
+    level: intermédio
+    short: Regressões lineares com penalização dos coeficientes (L2, L1 ou ambas).
+    definition: Ridge encolhe coeficientes (estável com multicolinearidade); Lasso anula alguns (seleção de variáveis); Elastic Net combina.
+    example: Lasso reduz 40 variáveis de calendário a 9 relevantes.
+    related: [regularizacao, regressao_linear, multicolinearidade]
+    steps: [modelos]
+
+  - id: arvore_decisao
+    term: Árvore de decisão
+    en: Decision tree
+    category: modelos
+    level: básico
+    short: Modelo em forma de fluxograma de perguntas sim/não.
+    definition: Muito interpretável e capta não linearidades, mas sozinha é instável e propensa a overfitting. É o bloco base de Random Forest e boosting.
+    example: "Se fim_fidelizacao_meses < 2 e reclamações ≥ 2 → risco alto (68%)."
+    related: [random_forest_termo, gradient_boosting, max_depth]
+    steps: [modelos]
+
+  - id: ensemble
+    term: Ensemble
+    en: Ensemble
+    category: modelos
+    level: intermédio
+    short: Combinação de vários modelos para obter melhor desempenho que cada um isolado.
+    definition: As duas grandes famílias são bagging (média de modelos independentes — Random Forest) e boosting (modelos sequenciais que corrigem erros — LightGBM, XGBoost).
+    example: Random Forest com 500 árvores.
+    related: [bagging, boosting, stacking]
+    steps: [modelos]
+
+  - id: bagging
+    term: Bagging
+    en: Bootstrap aggregating
+    category: modelos
+    level: intermédio
+    short: Treinar vários modelos em amostras bootstrap e fazer a média — reduz variância.
+    definition: Base do Random Forest e do Extra Trees.
+    example: 300 árvores, cada uma treinada numa amostra com reposição.
+    related: [ensemble, random_forest_termo]
+    steps: [modelos]
+
+  - id: boosting
+    term: Boosting
+    en: Boosting
+    category: modelos
+    level: intermédio
+    short: Treinar modelos em sequência, cada um focado nos erros dos anteriores — reduz bias.
+    definition: Gradient boosting (LightGBM, XGBoost, HistGradientBoosting) é o estado da arte em dados tabulares. Mais sensível a hiperparâmetros que o bagging.
+    example: 400 árvores pequenas adicionadas uma a uma com learning rate 0,05.
+    related: [gradient_boosting, learning_rate, early_stopping]
+    steps: [modelos]
+
+  - id: gradient_boosting
+    term: Gradient boosting (LightGBM, XGBoost)
+    en: Gradient boosting machines
+    category: modelos
+    level: intermédio
+    short: Família de boosting que ajusta cada nova árvore ao gradiente do erro.
+    definition: >-
+      LightGBM (crescimento por folha, muito rápido), XGBoost (regularização
+      rica, scale_pos_weight) e HistGradientBoosting (nativo do scikit-learn)
+      são as implementações disponíveis. Normalmente os modelos de melhor
+      desempenho em problemas de BI.
+    example: LightGBM com AUC 0,86 contra 0,81 da regressão logística no churn.
+    related: [boosting, learning_rate, num_leaves, n_estimators]
+    steps: [modelos]
+
+  - id: random_forest_termo
+    term: Random Forest
+    en: Random Forest
+    category: modelos
+    level: básico
+    short: Média de muitas árvores de decisão diversificadas.
+    definition: Robusto, com pouca afinação e bom primeiro modelo não linear. Menos preciso que boosting bem afinado.
+    example: Random Forest com 300 árvores e max_features = sqrt.
+    related: [bagging, arvore_decisao, max_features]
+    steps: [modelos]
+
+  - id: knn_termo
+    term: KNN (k vizinhos mais próximos)
+    en: k-Nearest Neighbours
+    category: modelos
+    level: básico
+    short: Prevê a partir dos k casos históricos mais semelhantes.
+    definition: Simples e intuitivo, mas lento em bases grandes e exige normalização.
+    example: Um lead é classificado olhando para os 15 leads mais parecidos.
+    related: [standardizacao, distancia_euclidiana]
+    steps: [modelos]
+
+  - id: svm_termo
+    term: SVM (máquina de vetores de suporte)
+    en: Support Vector Machine
+    category: modelos
+    level: avançado
+    short: Procura a fronteira com maior margem entre classes, com kernels para não linearidade.
+    definition: Eficaz em bases pequenas/médias; não escala bem acima de dezenas de milhares de linhas.
+    example: SVM com kernel RBF numa base de 3.000 colaboradores.
+    related: [regularizacao, standardizacao]
+    steps: [modelos]
+
+  - id: rede_neuronal
+    term: Rede neuronal (MLP)
+    en: Neural network / Multi-layer perceptron
+    category: modelos
+    level: avançado
+    short: Camadas de neurónios artificiais que aprendem representações não lineares.
+    definition: Em dados tabulares de BI raramente supera o gradient boosting e é menos interpretável; brilha em imagem, texto e áudio.
+    example: MLP com camadas (64, 32).
+    related: [learning_rate, early_stopping]
+    steps: [modelos]
+
+  - id: stacking
+    term: Stacking
+    en: Stacking
+    category: modelos
+    level: avançado
+    short: Combina previsões de vários modelos através de um modelo de segundo nível.
+    definition: Pode trazer pequenos ganhos à custa de complexidade operacional. Raramente justificável em BI.
+    example: Regressão logística sobre as previsões de LightGBM, RF e KNN.
+    related: [ensemble]
+    steps: [modelos]
+
+  # ================================================================ HIPERPARÂMETROS
+  - id: regularizacao
+    term: Regularização (L1 / L2)
+    en: Regularization
+    category: hiperparametros
+    level: intermédio
+    short: Penalização da complexidade do modelo para evitar overfitting.
+    definition: >-
+      L2 (Ridge) encolhe todos os coeficientes/pesos; L1 (Lasso) leva alguns a
+      zero. Nos modelos lineares é controlada por C (inverso) ou alpha; no
+      boosting por reg_lambda/reg_alpha.
+    example: Na regressão logística, C = 0,1 regulariza mais que C = 10.
+    related: [overfitting, ridge_termo, bias_variancia]
+    steps: [parametros]
+
+  - id: learning_rate
+    term: Learning rate (taxa de aprendizagem)
+    en: Learning rate / eta / shrinkage
+    category: hiperparametros
+    level: intermédio
+    short: Peso de cada nova árvore (boosting) ou passo do otimizador (redes neuronais).
+    definition: >-
+      Valores baixos (0,01–0,05) generalizam melhor mas exigem mais árvores.
+      Regra prática — ao dividir a learning rate por 2, duplique o nº de
+      árvores. Com early stopping, o nº de árvores ajusta-se sozinho.
+    example: learning_rate = 0,05 com 600 árvores vs 0,1 com 300.
+    related: [n_estimators, early_stopping, boosting]
+    steps: [parametros]
+
+  - id: n_estimators
+    term: Nº de árvores / iterações (n_estimators)
+    en: Number of estimators
+    category: hiperparametros
+    level: básico
+    short: Quantas árvores o ensemble tem.
+    definition: >-
+      Em Random Forest, mais árvores nunca pioram (só custam tempo). Em
+      boosting, demasiadas árvores com learning rate alta causam overfitting —
+      use early stopping.
+    example: 300 árvores no Random Forest; 400–1.500 no LightGBM.
+    related: [learning_rate, early_stopping]
+    steps: [parametros]
+
+  - id: max_depth
+    term: Profundidade máxima (max_depth)
+    en: Maximum depth
+    category: hiperparametros
+    level: básico
+    short: Nº máximo de níveis de cada árvore.
+    definition: Controla a complexidade das interações. Profundidades altas captam mais detalhe e aumentam o risco de overfitting.
+    example: max_depth = 6 permite interações de até 6 variáveis.
+    related: [num_leaves, min_samples_leaf, overfitting]
+    steps: [parametros]
+
+  - id: num_leaves
+    term: Nº de folhas (num_leaves)
+    en: Number of leaves
+    category: hiperparametros
+    level: intermédio
+    short: Principal controlo de complexidade no LightGBM (crescimento por folha).
+    definition: Deve ser inferior a 2^max_depth. Em bases pequenas (< 10 mil linhas) valores de 15–31 são mais seguros.
+    example: num_leaves = 31 (padrão) vs 127 (bases grandes e complexas).
+    related: [max_depth, lightgbm_termo]
+    steps: [parametros]
+
+  - id: lightgbm_termo
+    term: LightGBM
+    en: LightGBM
+    category: modelos
+    level: intermédio
+    short: Biblioteca de gradient boosting da Microsoft, muito rápida e precisa.
+    definition: Cresce árvores folha a folha, usa histogramas e trata valores em falta nativamente. Modelo principal recomendado para a maioria dos casos tabulares.
+    example: LightGBM para churn, lead scoring e previsão de procura (gbm_lags).
+    related: [gradient_boosting, num_leaves]
+    steps: [modelos]
+
+  - id: min_samples_leaf
+    term: Mínimo de registos por folha
+    en: min_samples_leaf / min_child_samples
+    category: hiperparametros
+    level: intermédio
+    short: Nº mínimo de observações em cada folha de uma árvore.
+    definition: Valores maiores tornam as previsões mais suaves e robustas ao ruído. Aumente em bases ruidosas ou pequenas.
+    example: min_child_samples = 50 numa base de 50 mil clientes.
+    related: [max_depth, overfitting]
+    steps: [parametros]
+
+  - id: max_features
+    term: Variáveis por divisão (max_features)
+    en: max_features
+    category: hiperparametros
+    level: intermédio
+    short: Fração de variáveis consideradas em cada divisão de uma árvore do Random Forest.
+    definition: Valores menores aumentam a diversidade entre árvores (menos correlação → melhor média). sqrt é o padrão em classificação.
+    example: max_features = sqrt com 25 variáveis → 5 por divisão.
+    related: [random_forest_termo, colsample]
+    steps: [parametros]
+
+  - id: subsample
+    term: Subamostragem de linhas (subsample)
+    en: Subsample / bagging fraction
+    category: hiperparametros
+    level: intermédio
+    short: Fração de linhas usada para treinar cada árvore do boosting.
+    definition: Introduz aleatoriedade que regulariza o modelo e acelera o treino. Valores típicos 0,6–0,9.
+    example: subsample = 0,8.
+    related: [colsample, regularizacao]
+    steps: [parametros]
+
+  - id: colsample
+    term: Subamostragem de colunas (colsample_bytree)
+    en: Column subsample / feature fraction
+    category: hiperparametros
+    level: intermédio
+    short: Fração de variáveis usada em cada árvore do boosting.
+    definition: Útil com muitas variáveis correlacionadas; reduz overfitting e tempo de treino.
+    example: colsample_bytree = 0,7.
+    related: [subsample, max_features]
+    steps: [parametros]
+
+  - id: class_weight
+    term: Pesos de classe (class_weight)
+    en: Class weights
+    category: hiperparametros
+    level: intermédio
+    short: Dá mais importância aos erros na classe minoritária durante o treino.
+    definition: >-
+      'balanced' ajusta os pesos inversamente à frequência das classes.
+      Aumenta o recall da classe rara, mas as probabilidades deixam de estar
+      calibradas (ficam inflacionadas).
+    example: Com 8% de incumprimento, cada positivo pesa ~11,5 vezes mais.
+    related: [desequilibrio_classes, scale_pos_weight, calibracao]
+    steps: [parametros]
+
+  - id: scale_pos_weight
+    term: scale_pos_weight
+    en: scale_pos_weight
+    category: hiperparametros
+    level: avançado
+    short: Multiplicador do peso dos positivos no XGBoost (classificação binária).
+    formula: Referência = nº de negativos / nº de positivos
+    definition: Para ranking (PR-AUC) por vezes a raiz quadrada da referência funciona melhor. Descalibra probabilidades.
+    example: 1,2% de fraude → scale_pos_weight ≈ 82 (ou ≈ 9 com raiz quadrada).
+    related: [class_weight, desequilibrio_classes]
+    steps: [parametros]
+
+  - id: early_stopping
+    term: Early stopping (paragem antecipada)
+    en: Early stopping
+    category: hiperparametros
+    level: intermédio
+    short: Parar o treino quando o desempenho numa validação interna deixa de melhorar.
+    definition: Evita overfitting no boosting e em redes neuronais e escolhe automaticamente o nº de iterações.
+    example: Treino parou na árvore 412 de 2.000 porque a validação não melhorava há 50 árvores.
+    related: [n_estimators, learning_rate, overfitting]
+    steps: [parametros, treino]
+
+  # ================================================================ VALIDAÇÃO
+  - id: conjunto_teste
+    term: Conjuntos de treino, validação e teste
+    en: Train / validation / test sets
+    category: validacao
+    level: básico
+    short: Partições dos dados para aprender, afinar e avaliar de forma honesta.
+    definition: >-
+      Treino → o modelo aprende. Validação (ou validação cruzada) → escolhem-se
+      modelos e hiperparâmetros. Teste → estimativa final, usado uma só vez. A
+      plataforma reserva 20% para teste (ou o período mais recente quando há
+      coluna temporal).
+    example: 80% dos clientes para treino com validação cruzada de 5 folds; 20% para teste.
+    related: [validacao_cruzada, holdout, validacao_temporal]
+    steps: [treino, avaliacao]
+
+  - id: holdout
+    term: Holdout
+    en: Holdout set
+    category: validacao
+    level: básico
+    short: Parte dos dados guardada à parte e nunca usada no treino.
+    definition: Sinónimo prático de conjunto de teste.
+    example: Últimos 3 meses de transações reservados como holdout.
+    related: [conjunto_teste]
+    steps: [treino]
+
+  - id: validacao_cruzada
+    term: Validação cruzada (k-fold)
+    en: Cross-validation
+    category: validacao
+    level: intermédio
+    short: Divide o treino em k partes e treina/avalia k vezes, rodando a parte de validação.
+    definition: >-
+      Dá uma estimativa mais estável do desempenho (média ± desvio) e usa
+      todos os dados. Em classificação usa-se a versão estratificada; em
+      dados temporais, a versão temporal (TimeSeriesSplit).
+    example: AUC em 5 folds = 0,84 ± 0,01.
+    related: [estratificacao, validacao_temporal, conjunto_teste]
+    steps: [treino]
+
+  - id: estratificacao
+    term: Estratificação
+    en: Stratification
+    category: validacao
+    level: intermédio
+    short: Manter a proporção das classes em cada partição.
+    definition: Essencial com classes desequilibradas para que cada fold tenha positivos suficientes.
+    example: Cada fold mantém 18% de churners.
+    related: [validacao_cruzada, desequilibrio_classes]
+    steps: [treino]
+
+  - id: validacao_temporal
+    term: Validação temporal
+    en: Time-based validation
+    category: validacao
+    level: intermédio
+    short: Treinar no passado e avaliar no futuro, respeitando a ordem cronológica.
+    definition: >-
+      Obrigatória em previsão e recomendada sempre que os dados têm data
+      (fraude, manutenção, stock). Divisões aleatórias deixam o modelo
+      "espreitar o futuro" e sobrestimam o desempenho.
+    example: Treino com transações até setembro, teste com outubro e novembro.
+    related: [backtesting, data_leakage, validacao_cruzada]
+    steps: [treino]
+
+  - id: backtesting
+    term: Backtesting
+    en: Backtesting / rolling-origin evaluation
+    category: validacao
+    level: intermédio
+    short: Simular previsões feitas no passado e compará-las com o que aconteceu.
+    definition: >-
+      Para séries temporais, repete-se várias vezes — treinar até à data t,
+      prever o horizonte h, avaliar — avançando t (rolling origin). O Agente
+      de Previsão usa 3 origens por omissão.
+    example: Três backtests de 28 dias terminados em setembro, outubro e novembro.
+    related: [validacao_temporal, horizonte_previsao, wape]
+    steps: [treino, avaliacao]
+
+  - id: tuning
+    term: Afinação de hiperparâmetros (tuning)
+    en: Hyperparameter tuning
+    category: validacao
+    level: intermédio
+    short: Procurar sistematicamente a melhor combinação de hiperparâmetros.
+    definition: >-
+      Métodos — grid search (todas as combinações), random search (amostra
+      aleatória, mais eficiente) e otimização bayesiana (Optuna, aprende com
+      tentativas anteriores). A avaliação é sempre por validação cruzada.
+    example: 30 tentativas de random search sobre learning_rate, num_leaves e min_child_samples.
+    related: [hiperparametro, random_search, optuna_termo]
+    steps: [parametros, treino]
+
+  - id: random_search
+    term: Random search / grid search
+    en: Random search / grid search
+    category: validacao
+    level: intermédio
+    short: Pesquisa de hiperparâmetros por amostragem aleatória ou grelha completa.
+    definition: Random search encontra boas combinações com muito menos tentativas que grid search quando só alguns hiperparâmetros importam.
+    example: 20 combinações aleatórias vs 625 da grelha completa.
+    related: [tuning, optuna_termo]
+    steps: [treino]
+
+  - id: optuna_termo
+    term: Otimização bayesiana (Optuna)
+    en: Bayesian optimization
+    category: validacao
+    level: avançado
+    short: Pesquisa inteligente que usa resultados anteriores para propor as próximas tentativas.
+    definition: Converge mais depressa que a pesquisa aleatória. Disponível na plataforma quando o Optuna está instalado.
+    example: 30 tentativas Optuna com o espaço de pesquisa sugerido pelo Conselheiro.
+    related: [tuning, random_search]
+    steps: [treino]
+
+  - id: reprodutibilidade
+    term: Reprodutibilidade (semente aleatória)
+    en: Reproducibility / random seed
+    category: validacao
+    level: intermédio
+    short: Capacidade de obter os mesmos resultados repetindo o processo.
+    definition: A plataforma fixa a semente aleatória (random_state = 42), guarda o snapshot dos dados, os parâmetros e as versões das bibliotecas com cada modelo.
+    example: Treinar duas vezes o mesmo projeto produz exatamente as mesmas métricas.
+    related: [snapshot, registo_modelos]
+    steps: [treino]

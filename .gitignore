@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+# Node
+frontend/node_modules/
+frontend/dist/
+# Dados e segredos
+workspace/
+.env
+*.joblib
+*.parquet
+!backend/mlstudio/knowledge/data/*.yaml
+# Sistema
+.DS_Store
+.idea/
+.vscode/

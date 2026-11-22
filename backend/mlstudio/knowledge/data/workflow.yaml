@@ -1,0 +1,268 @@
+# Percurso guiado de um projeto de ML — 13 passos.
+# Cada passo tem o agente responsável, objetivo, porquê, como, checklist,
+# erros comuns e termos do glossário. A UI mostra-o como "stepper" e o Agente
+# Guia usa-o para recomendar o próximo passo.
+steps:
+  - id: enquadramento
+    order: 1
+    title: Enquadrar o problema de negócio
+    agent: framing
+    objective: Transformar uma necessidade de negócio numa pergunta de ML precisa, com alvo, decisão e KPI.
+    why: >-
+      A maioria dos projetos falha aqui, não no algoritmo. Um alvo mal
+      definido ou uma decisão inexistente tornam qualquer modelo inútil.
+    how:
+      - Escolha a área e o caso de uso mais próximo (ou descreva o problema em texto livre).
+      - Defina a pergunta de negócio e a decisão que o modelo vai suportar.
+      - Defina a unidade de análise (cliente, fatura, loja × dia) e o horizonte.
+      - Defina o alvo com precisão (o quê, quando, como se mede).
+      - Declare o KPI a melhorar e a baseline atual (regra existente ou média).
+      - Estime custos e benefícios de acertos e erros.
+    checklist:
+      - Pergunta de negócio escrita numa frase
+      - Decisão/ação clara e responsável identificado
+      - Alvo e horizonte definidos
+      - KPI e baseline conhecidos
+    mistakes:
+      - Começar pelos dados ou pelo algoritmo em vez da decisão
+      - Alvo ambíguo ("clientes insatisfeitos")
+      - Nenhum dono de negócio para usar o resultado
+    terms: [machine_learning, target, data_corte, kpi, baseline, matriz_custo_beneficio, horizonte_previsao]
+    outputs: [Ficha do problema, Tipo de problema, Alvo sugerido]
+
+  - id: dados
+    order: 2
+    title: Ligar e extrair dados do Power BI
+    agent: connector
+    objective: Encontrar no Power BI Service o modelo semântico e a tabela certos e criar um snapshot para o projeto.
+    why: >-
+      Usar o modelo semântico certificado garante as mesmas definições de
+      negócio dos relatórios; o snapshot garante reprodutibilidade.
+    how:
+      - Escolha o conector (interno, REST ou demo) e teste a ligação.
+      - Navegue workspace → modelo semântico → tabela; veja as colunas.
+      - Use a recomendação do agente (tabelas com mais colunas relevantes para o caso).
+      - Ajuste a consulta DAX (filtros, colunas, TOPN) se necessário.
+      - Carregue o snapshot e confirme nº de linhas e período.
+    checklist:
+      - Granularidade da tabela = unidade de análise
+      - Coluna alvo presente (supervisionado)
+      - Período suficiente de histórico
+    mistakes:
+      - Tabela de factos ao nível errado (linhas em vez de clientes)
+      - Extrair dados já filtrados por uma regra de negócio que enviesa a amostra
+    terms: [power_bi_service, modelo_semantico, dax, evaluate_dax, granularidade, snapshot, conector_interno]
+    outputs: [Snapshot do dataset, Consulta DAX]
+
+  - id: perfil
+    order: 3
+    title: Perfilar os dados (análise exploratória)
+    agent: profiler
+    objective: Perceber o conteúdo, tipos, distribuições e relação de cada variável com o alvo.
+    why: Evita surpresas mais tarde e gera hipóteses de negócio e de features.
+    how:
+      - Revise os tipos inferidos (numérico, categórico, data, identificador).
+      - Veja distribuições e valores extremos.
+      - Analise a relação de cada variável com o alvo.
+      - Veja correlações fortes entre variáveis.
+    checklist:
+      - Tipos de colunas confirmados
+      - Distribuição do alvo conhecida (desequilíbrio?)
+      - Primeiras hipóteses de drivers anotadas
+    mistakes:
+      - Saltar a exploração e treinar diretamente
+    terms: [distribuicao, media_mediana, assimetria, correlacao, cramers_v, desequilibrio_classes]
+    outputs: [Perfil de colunas, Análise do alvo, Correlações]
+
+  - id: qualidade
+    order: 4
+    title: Avaliar e corrigir a qualidade dos dados
+    agent: quality
+    objective: Detetar e tratar nulos, duplicados, outliers, identificadores, constantes e leakage.
+    why: Lixo entra, lixo sai. E o leakage produz modelos que parecem ótimos e falham em produção.
+    how:
+      - Veja o score de qualidade e os problemas por gravidade.
+      - Confirme colunas a excluir (IDs, constantes, suspeitas de leakage).
+      - Decida o tratamento de nulos e outliers.
+    checklist:
+      - Nenhuma variável com leakage
+      - Identificadores excluídos do treino
+      - Estratégia de nulos definida
+    mistakes:
+      - Ignorar avisos de leakage
+      - Remover outliers legítimos
+    terms: [valores_em_falta, imputacao, duplicados, outlier, iqr, data_leakage, identificador, variavel_constante, cardinalidade]
+    outputs: [Score de qualidade, Problemas, Colunas excluídas]
+
+  - id: features
+    order: 5
+    title: Engenharia de features
+    agent: features
+    objective: Preparar e criar variáveis que facilitem a aprendizagem.
+    why: Boas features valem mais que algoritmos sofisticados.
+    how:
+      - Reveja o plano automático (datas, codificação, transformações).
+      - Veja o poder preditivo de cada variável (informação mútua).
+      - Acrescente rácios e indicadores de negócio relevantes.
+    checklist:
+      - Datas convertidas em componentes úteis
+      - Categóricas com codificação adequada à cardinalidade
+      - Variáveis com poder preditivo identificadas
+    mistakes:
+      - Criar features com informação do futuro
+    terms: [feature_engineering, one_hot_encoding, target_encoding, standardizacao, transformacao_log, rfm, features_data, informacao_mutua]
+    outputs: [Plano de features, Ranking de poder preditivo]
+
+  - id: modelos
+    order: 6
+    title: Escolher modelos candidatos
+    agent: selection
+    objective: Selecionar 2 a 4 algoritmos adequados ao tipo de problema, aos dados e às exigências de explicabilidade.
+    why: Comparar várias famílias evita escolhas por hábito e dá uma baseline interpretável.
+    how:
+      - Veja a classificação de modelos do agente e as razões.
+      - Inclua sempre um modelo simples/interpretável como referência.
+      - Ajuste segundo restrições (explicabilidade, tempo de treino).
+    checklist:
+      - Pelo menos um modelo interpretável
+      - Pelo menos um modelo de alto desempenho
+    mistakes:
+      - Escolher só o modelo "da moda"
+    terms: [algoritmo, regressao_logistica, random_forest_termo, gradient_boosting, ensemble, baseline]
+    outputs: [Modelos selecionados com justificação]
+
+  - id: parametros
+    order: 7
+    title: Configurar hiperparâmetros
+    agent: advisor
+    objective: Definir hiperparâmetros adequados ao caso de uso e ao perfil dos dados, e o espaço de pesquisa para afinação.
+    why: Hiperparâmetros controlam o equilíbrio entre underfitting e overfitting.
+    how:
+      - Veja os valores recomendados e a justificação de cada um.
+      - Ajuste interativamente e leia os avisos de validação.
+      - Compare a sua configuração com a recomendada (validação cruzada rápida).
+      - Decida se quer afinação automática (random search / Optuna).
+    checklist:
+      - Desequilíbrio tratado (pesos de classe) se necessário
+      - Complexidade adequada ao volume de dados
+    mistakes:
+      - Afinar dezenas de hiperparâmetros com poucos dados
+      - Avaliar a afinação no conjunto de teste
+    terms: [hiperparametro, regularizacao, learning_rate, n_estimators, max_depth, num_leaves, class_weight, early_stopping, tuning, bias_variancia]
+    outputs: [Hiperparâmetros por modelo, Espaço de pesquisa]
+
+  - id: treino
+    order: 8
+    title: Treinar e validar
+    agent: training
+    objective: Treinar os candidatos com validação cruzada, comparar e escolher o campeão.
+    why: A validação cruzada estima o desempenho em dados novos de forma estável.
+    how:
+      - Lance o treino (com ou sem afinação automática).
+      - Compare o leaderboard (métrica principal ± desvio, tempo).
+      - Verifique a diferença treino vs validação (overfitting).
+    checklist:
+      - Validação temporal se há datas
+      - Modelo campeão melhor que a baseline
+    mistakes:
+      - Escolher pelo desempenho no treino
+    terms: [treino, validacao_cruzada, estratificacao, validacao_temporal, backtesting, overfitting, conjunto_teste]
+    outputs: [Leaderboard, Modelo campeão registado]
+
+  - id: avaliacao
+    order: 9
+    title: Avaliar com métricas técnicas e de negócio
+    agent: evaluation
+    objective: Medir o campeão no conjunto de teste e traduzir o desempenho em impacto de negócio.
+    why: O negócio decide com euros e capacidade, não com AUC.
+    how:
+      - Analise as métricas no teste e compare com a baseline.
+      - Explore curvas ROC/PR, lift e calibração (classificação) ou resíduos (regressão).
+      - Escolha o limiar com a matriz de custo-benefício ou a capacidade operacional.
+      - Veja o erro por segmento para detetar onde o modelo falha.
+    checklist:
+      - Limiar escolhido e justificado
+      - Impacto de negócio estimado
+    mistakes:
+      - Usar o limiar 0,5 por omissão
+      - Reportar accuracy com desequilíbrio
+    terms: [matriz_confusao, auc_roc, pr_auc, lift, curva_ganhos, limiar_decisao, calibracao, mae, wape, matriz_custo_beneficio]
+    outputs: [Métricas de teste, Limiar ótimo, Impacto estimado]
+
+  - id: explicabilidade
+    order: 10
+    title: Explicar o modelo
+    agent: explainability
+    objective: Perceber que fatores o modelo usa e como, globalmente e caso a caso.
+    why: Gera confiança, deteta problemas (leakage, enviesamento) e orienta a ação.
+    how:
+      - Veja a importância por permutação das variáveis originais.
+      - Analise os gráficos de dependência parcial dos principais fatores.
+      - Explore explicações individuais de casos de alto risco.
+    checklist:
+      - Principais drivers fazem sentido para o negócio
+      - Motivos individuais compreensíveis
+    mistakes:
+      - Interpretar importância como causalidade
+    terms: [explicabilidade, importancia_features, permutation_importance, pdp, explicacao_local, shap, causalidade]
+    outputs: [Drivers globais, Dependência parcial, Explicações locais]
+
+  - id: governanca
+    order: 11
+    title: Governança, ética e conformidade
+    agent: governance
+    objective: Verificar dados pessoais, equidade entre grupos, nível de risco AI Act e documentar o modelo.
+    why: Modelos afetam pessoas e estão sujeitos a RGPD e AI Act.
+    how:
+      - Reveja colunas com dados pessoais (PII) detetadas.
+      - Analise métricas de equidade por atributo sensível.
+      - Confirme o nível de risco e as obrigações aplicáveis.
+      - Gere e reveja a ficha do modelo (model card).
+    checklist:
+      - Sem PII desnecessária no treino
+      - Impacto desigual ≥ 0,8 ou justificado
+      - Model card aprovado
+    mistakes:
+      - Assumir que remover o género elimina o enviesamento
+    terms: [rgpd, dados_pessoais, ai_act, fairness, impacto_desigual, model_card, human_in_the_loop]
+    outputs: [Relatório de PII, Análise de equidade, Model card]
+
+  - id: implementacao
+    order: 12
+    title: Implementar no Power BI
+    agent: deployment
+    objective: Promover o modelo a produção, pontuar a população e publicar as previsões no Power BI.
+    why: Um modelo só gera valor quando as previsões chegam a quem decide.
+    how:
+      - Promova o campeão a produção no registo de modelos.
+      - Execute o scoring sobre a tabela atual do Power BI.
+      - Publique a tabela de previsões (conector ou exportação).
+      - Crie as medidas DAX e os visuais sugeridos no relatório.
+      - Defina a periodicidade de atualização.
+    checklist:
+      - Tabela de previsões com IDs, score, banda e motivos
+      - Medidas DAX criadas
+      - Dono do processo de atualização definido
+    mistakes:
+      - Entregar scores sem motivos nem ação recomendada
+    terms: [scoring_batch, scoring_online, push_dataset, medida_dax, registo_modelos, explicacao_local]
+    outputs: [Tabela de previsões, Medidas DAX, Visuais recomendados]
+
+  - id: monitorizacao
+    order: 13
+    title: Monitorizar e re-treinar
+    agent: monitoring
+    objective: Acompanhar drift e desempenho em produção e decidir quando re-treinar.
+    why: O mundo muda; modelos degradam-se silenciosamente.
+    how:
+      - Compare os dados atuais com os de treino (PSI por variável).
+      - Acompanhe a distribuição das previsões.
+      - Quando o alvo real chegar, meça o desempenho real.
+      - Re-treine e compare champion vs challenger.
+    checklist:
+      - Limiares de alerta definidos
+      - Periodicidade de revisão acordada
+    mistakes:
+      - Nunca voltar a olhar para o modelo depois de implementado
+    terms: [drift_dados, concept_drift, psi, teste_ks, monitorizacao_termo, retreino, champion_challenger]
+    outputs: [Relatório de drift, Recomendação de re-treino]

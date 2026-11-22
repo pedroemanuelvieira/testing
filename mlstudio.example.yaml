@@ -1,0 +1,23 @@
+# Configuração do BI ML Studio (use com MLSTUDIO_CONFIG=mlstudio.yaml).
+# As variáveis de ambiente têm prioridade. Segredos (PBI_CLIENT_SECRET, ANTHROPIC_API_KEY) só por ambiente/cofre.
+home: ./workspace          # projetos, modelos, exportações e conversas
+demo: 1                    # conector de demonstração (0 para desativar em produção)
+max_rows: 200000           # limite de linhas usadas no treino (amostragem estratificada acima disto)
+
+internal_connector:
+  name: Power BI (conector interno)
+  target: empresa_pbi.conector:PowerBIClient     # módulo:ClasseOuFabrica
+  path: /opt/empresa/libs                        # opcional: pasta a acrescentar ao PYTHONPATH
+  kwargs: {ambiente: producao}                   # opcional: argumentos do construtor
+  methods:                                       # opcional: nomes dos métodos se forem diferentes dos padrão
+    # list_workspaces: obter_workspaces
+    # execute_dax: executar_consulta
+
+powerbi_rest:            # alternativa: API REST oficial (o segredo vem de PBI_CLIENT_SECRET)
+  tenant_id: ""
+  client_id: ""
+
+chat:
+  model: claude-opus-5-5
+  effort: medium         # low | medium | high
+  fallbacks: default     # "off" para desativar o fallback server-side em recusas
