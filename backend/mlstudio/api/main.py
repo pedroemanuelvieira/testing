@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
+import webbrowser
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +27,17 @@ from .routers import chat, connectors, knowledge, models, projects
 logging.basicConfig(level=os.environ.get("MLSTUDIO_LOG_LEVEL", "INFO"),
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-app = FastAPI(title="BI ML Studio", version=__version__,
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # MLSTUDIO_OPEN_BROWSER=http://localhost:8000 abre o browser quando a API está pronta (usado pelo run.bat)
+    url = os.environ.get("MLSTUDIO_OPEN_BROWSER")
+    if url:
+        threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+    yield
+
+
+app = FastAPI(title="BI ML Studio", version=__version__, lifespan=lifespan,
               description="Plataforma de machine learning com agentes especializados para equipas de BI (Power BI).")
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_methods=["*"], allow_headers=["*"])

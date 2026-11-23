@@ -36,7 +36,20 @@ docker compose up --build
 # http://localhost:8000
 ```
 
-### Local
+### Windows
+
+Requisitos: [Python 3.12](https://www.python.org/downloads/windows/) (marcar *Add python.exe to PATH*) e
+[Node.js LTS](https://nodejs.org/). Na pasta do projeto, duplo clique ou na linha de comandos:
+
+```bat
+install.bat                   :: cria .venv, instala dependências e compila a interface (só na 1.ª vez)
+run.bat                       :: arranca em http://localhost:8000 e abre o browser
+run.bat 8001                  :: outra porta, se a 8000 estiver ocupada
+```
+
+No PowerShell use `.\install.bat` e `.\run.bat`. Os dados de trabalho ficam na pasta `workspace`.
+
+### Linux / macOS
 
 ```bash
 make install                  # pip + npm
@@ -44,7 +57,7 @@ make run                      # compila o frontend e serve tudo em http://localh
 # desenvolvimento: `make backend` (API com reload) + `make frontend` (Vite em :5173 com proxy)
 ```
 
-Requisitos: Python ≥ 3.10, Node ≥ 18.
+Requisitos: Python ≥ 3.10 (recomendado 3.12), Node ≥ 18.
 
 ### Primeiro projeto (dados de demonstração)
 

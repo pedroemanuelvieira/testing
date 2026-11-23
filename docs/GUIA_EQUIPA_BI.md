@@ -1,5 +1,12 @@
 # Guia da equipa de BI
 
+## Instalar
+
+- **Windows:** instale o Python 3.12 (com *Add python.exe to PATH*) e o Node.js LTS. Na pasta do projeto faça duplo
+  clique em `install.bat` (só na primeira vez) e depois em `run.bat`. O browser abre em http://localhost:8000.
+- **Linux/macOS:** `make install` e `make run`.
+- **Docker:** `docker compose up --build`.
+
 ## Em 5 minutos
 
 1. **Casos de uso** → escolha, por exemplo, *Previsão de churn de clientes* → **Criar projeto**.

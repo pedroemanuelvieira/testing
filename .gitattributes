@@ -1,0 +1,2 @@
+# Scripts do Windows guardados com CRLF (tambem no ZIP descarregado do GitHub)
+*.bat -text
